@@ -44,6 +44,8 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 // [6주차 연습문제] /testdb(회원목록) 는 ADMIN, MANAGER 만 (USER 403)
                                                 .requestMatchers("/testdb").hasAnyRole("ADMIN", "MANAGER")
+                                                .requestMatchers("/board", "/board/{id:\\d+}").permitAll() // 게시판 목록·상세
+                                                                                                           // : 누구나
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form // 2. 폼 로그인 설정 (인증)
                                                 .loginPage("/login")
