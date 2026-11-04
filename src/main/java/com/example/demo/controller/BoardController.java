@@ -39,9 +39,25 @@ public class BoardController {
         }
     }
 
-    @GetMapping("/{id}") // 상세 : GET /board/3 (누구나)
+    @GetMapping("/my") // [9주차 연습문제 ②] 내가 쓴 글 : GET /board/my (로그인 필요)
+    public String my(Principal principal, Model model) {
+        List<Post> posts = postService.findMine(principal.getName()); // 로그인한 사람의 글만
+        model.addAttribute("posts", posts);
+        model.addAttribute("listTitle", "내가 쓴 글"); // 목록 화면 재사용, 제목만 변경
+        model.addAttribute("myList", true); // [9주차 개선 ①] 화면 버튼을 "전체 글 보기"로 바꾼다
+        return "board/list";
+    }
+
+    // @GetMapping("/{id}") // 상세 : GET /board/3 (누구나)
+    // public String detail(@PathVariable Long id, Model model) {
+    //     Post post = postService.findById(id);
+    //     model.addAttribute("post", post);
+    //     return "board/detail";
+    // }
+
+    @GetMapping("/{id}") // [9주차 연습문제 ①] 상세 : GET /board/3 (누구나) + 조회수 1 증가
     public String detail(@PathVariable Long id, Model model) {
-        Post post = postService.findById(id);
+        Post post = postService.read(id); // findById → read : 열 때마다 viewCount + 1
         model.addAttribute("post", post);
         return "board/detail";
     }

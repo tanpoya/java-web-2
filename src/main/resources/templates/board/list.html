@@ -26,7 +26,10 @@
                 <div class="d-flex align-items-center gap-3">
                     <th:block sec:authorize="isAuthenticated()">
                         <span><i class="bi-person-circle me-1"></i><strong sec:authentication="name">user</strong>님</span>
-                        <a th:href="@{/board/my}" class="btn btn-light btn-sm-custom"><i class="bi-person-lines-fill me-1"></i>내가 쓴 글</a>
+                        <!-- <a th:href="@{/board/my}" class="btn btn-light btn-sm-custom"><i class="bi-person-lines-fill me-1"></i>내가 쓴 글</a> -->
+                        <!-- [9주차 개선 ①] 내가 쓴 글 화면(myList)이면 "전체 글 보기", 아니면 "내가 쓴 글" 버튼 -->
+                        <a th:unless="${myList}" th:href="@{/board/my}" class="btn btn-light btn-sm-custom"><i class="bi-person-lines-fill me-1"></i>내가 쓴 글</a>
+                        <a th:if="${myList}" th:href="@{/board}" class="btn btn-light btn-sm-custom"><i class="bi-list-ul me-1"></i>전체 글 보기</a>
                     </th:block>
                     <a sec:authorize="isAnonymous()" th:href="@{/login}" class="btn btn-light btn-sm-custom"><i class="bi-box-arrow-in-right me-1"></i>로그인</a>
                 </div>
@@ -76,5 +79,16 @@
                 </div>
             </div>
         </main>
+
+        <!-- [9주차 개선 ②] 뒤로가기로 돌아왔을 때 조회수가 바로 반영되도록 -->
+        <script>
+            // 브라우저의 뒤로/앞으로 캐시(bfcache)는 서버에 다시 묻지 않고 이전 화면을 메모리에서 그대로 꺼낸다.
+            // persisted = true 이면 캐시에서 꺼낸 화면이므로 새로고침해서 최신 목록(조회수)을 다시 받는다.
+            window.addEventListener('pageshow', function (event) {
+                if (event.persisted) {
+                    location.reload();
+                }
+            });
+        </script>
     </body>
 </html>

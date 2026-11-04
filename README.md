@@ -201,3 +201,103 @@ Spring Boot 4.1 · Java 25 · Thymeleaf · Spring Data JPA · MySQL · Spring Se
 > 주의 : DB 비밀번호는 `application-secret.properties`에만 두고 GitHub에 올리지 않는다. (5주차)
 
 # 9주차 - 게시판(CRUD) + 수정 및 삭제 / 본인 확인
+
+## 9주차 연습문제 - 게시판 개선하기
+
+### ① 조회수
+
+**추가한 곳**
+
+- `PostService` : `read(id)` 메서드 추가
+- `BoardController` : `detail()`에서 `findById()` 대신 `read()`를 호출 (기존 `detail()`은 주석으로 남김)
+
+**하는 일**
+
+- `read(id)`는 `findById()`로 글을 찾은 뒤 `viewCount`를 1 올리고 `save()`로 저장한다. id가 있으므로 `save()`는 UPDATE를 실행한다.
+- 상세 화면(`GET /board/{id}`)을 열 때마다 조회수가 1씩 늘어나고, 목록·상세 화면의 "조회" 칸에 그대로 보인다.
+- 조회수만 바꾸고 `updatedAt`은 건드리지 않는다. 그래서 글을 읽기만 해도 "수정 시간"이 표시되는 문제가 생기지 않는다.
+- 없는 글 번호라면 `findById()`에서 404가 나므로 조회수 증가 전에 멈춘다.
+
+### ② 내가 쓴 글 모아 보기
+
+**추가한 곳**
+
+- `PostRepository` : `findByAuthor_UsernameOrderByIdDesc(String username)` 메서드 이름만 추가
+- `PostService` : `findMine(username)` 메서드 추가
+- `BoardController` : `GET /board/my` 를 처리하는 `my()` 메서드 추가
+
+**하는 일**
+
+- 리포지토리 메서드는 이름 규칙만으로 JPA가 SQL을 만든다.
+  - `findBy` → `SELECT ... FROM posts`
+  - `Author_Username` → 작성자(author)의 username으로 `JOIN member ... WHERE m.username = ?`
+  - `OrderByIdDesc` → `ORDER BY p.id DESC` (최신 글이 위로)
+- `my()`는 `Principal`에서 로그인한 아이디를 꺼내 그 사람의 글만 조회하고, `posts`와 `listTitle = "내가 쓴 글"`을 넘겨 기존 `board/list.html`을 그대로 재사용한다. (`listTitle`이 없으면 화면은 "게시판"으로 표시)
+- `SecurityConfig`의 `permitAll()`은 `/board`와 `/board/{id:\d+}`(숫자)만 허용하므로, `/board/my`는 `anyRequest().authenticated()`에 걸려 로그인하지 않으면 로그인 화면으로 이동한다. 설정은 바꿀 필요가 없었다.
+
+**결과 확인**
+
+| 하는 일                           | 기대 결과                               |
+| --------------------------------- | --------------------------------------- |
+| 같은 글 상세를 3번 열기           | 조회 3                                  |
+| student1 로그인 → 내가 쓴 글      | student1의 글만, 제목 "내가 쓴 글"      |
+| 로그인 안 하고 `/board/my`        | 로그인 화면                             |
+
+=============================================
+---
+
+## 9주차 추가 개선 - 게시판 사용성 문제 해결
+
+### ① "내가 쓴 글"에서 전체 글로 돌아갈 수 없음
+
+**문제** : "내가 쓴 글" 화면에도 버튼이 똑같이 "내가 쓴 글"로 보였다. 전체 글 목록으로 돌아가려면 메인으로 나갔다가 게시판 메뉴를 다시 눌러야 했다.
+
+**바꾼 곳**
+
+- `BoardController.my()` : `model.addAttribute("myList", true);` 한 줄 추가
+- `board/list.html` : 헤더의 "내가 쓴 글" 버튼(기존 줄은 주석 처리)을 아래 두 버튼으로 바꿨다.
+
+```html
+<a th:unless="${myList}" th:href="@{/board/my}" ...>내가 쓴 글</a>
+<a th:if="${myList}" th:href="@{/board}" ...>전체 글 보기</a>
+```
+
+**하는 일**
+
+- `myList`는 `/board/my`일 때만 넘어가는 값이다. 그래서 전체 목록(`/board`)에서는 "내가 쓴 글" 버튼이, 내가 쓴 글 화면에서는 "전체 글 보기" 버튼이 보인다.
+- `listTitle`(화면 제목)과 별도로 `myList`를 둔 이유 : 제목 문구와 화면 종류를 따로 관리해야, 나중에 제목만 바꿔도 버튼 동작이 함께 바뀌지 않는다.
+
+### ② 뒤로가기 시 목록의 조회수가 바로 바뀌지 않음
+
+**문제** : 목록 → 글 상세(조회수 +1) → 브라우저 뒤로가기를 누르면, 목록에는 이전 조회수가 그대로 보였다. 새로고침해야 반영됐다.
+
+**원인** : 서버는 이미 `Cache-Control: no-cache, no-store`를 보내고 있었다(스프링 시큐리티 기본값). 그래서 HTTP 캐시 문제는 아니었다. 브라우저의 **뒤로/앞으로 캐시(bfcache)** 가 서버에 다시 요청하지 않고, 떠나기 전 화면을 메모리에서 그대로 복원했기 때문이다.
+
+**바꾼 곳**
+
+- `board/list.html` : `</body>` 바로 앞에 `pageshow` 이벤트 스크립트 추가
+
+```html
+<script>
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted) {
+            location.reload();
+        }
+    });
+</script>
+```
+
+**하는 일**
+
+- `pageshow`는 화면이 보일 때마다 실행된다. 처음 열 때와 뒤로가기로 돌아올 때 모두 해당한다.
+- `event.persisted`가 `true`이면 bfcache에서 꺼낸 화면이라는 뜻이다. 이때만 `location.reload()`로 서버에서 목록을 다시 받아 최신 조회수를 보여준다.
+- 처음 열거나 링크로 들어온 경우에는 `persisted`가 `false`라서 새로고침하지 않는다. 그래서 요청이 두 번 가거나 무한 새로고침되지 않는다.
+- 목록 화면은 전체 목록과 내가 쓴 글이 함께 쓰므로 두 화면 모두 적용된다.
+
+**결과 확인**
+
+| 하는 일                                     | 기대 결과                               |
+| ------------------------------------------- | --------------------------------------- |
+| 로그인 → 게시판 → 내가 쓴 글                | 버튼이 "전체 글 보기"로 바뀜            |
+| "전체 글 보기" 클릭                         | 전체 목록, 버튼은 다시 "내가 쓴 글"     |
+| 목록 → 글 상세 → 뒤로가기                   | 목록의 조회수가 1 늘어난 값으로 보임    |
