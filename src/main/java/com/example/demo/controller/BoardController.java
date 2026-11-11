@@ -10,16 +10,34 @@ import com.example.demo.model.domain.Post;
 import com.example.demo.model.dto.PostForm;
 import com.example.demo.model.service.PostService;
 
+import org.springframework.data.domain.Page;
+
+import com.example.demo.model.service.CommentService;
+
 @Controller // 게시판 화면 컨트롤러
 @RequestMapping("/board") // 모든 URL 앞에 /board
 public class BoardController {
     @Autowired
     PostService postService;
 
-    @GetMapping // 목록 : GET /board (누구나)
-    public String list(Model model) {
-        List<Post> posts = postService.findAll();
-        model.addAttribute("posts", posts);
+    @Autowired // ① 필드 추가 (postService 아래)
+    CommentService commentService;
+
+    // 리스트 게시판 전체글을 보여줌. 페이징 적용 X
+    // @GetMapping // 목록 : GET /board (누구나)
+    // public String list(Model model) {
+    // List<Post> posts = postService.findAll();
+    // model.addAttribute("posts", posts);
+    // return "board/list";
+    // }
+    // 페이징 적용 (컨트롤러에서 페이지 번호를 받아서 서비스에 전달, 서비스에서 Page<Post>를 반환)
+    @GetMapping // 목록 : GET /board?page=0&keyword=스프링 (누구나)
+    public String list(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String keyword, Model model) {
+        Page<Post> posts = postService.findPage(keyword, page);
+        model.addAttribute("posts", posts.getContent());
+        model.addAttribute("page", posts);
+        model.addAttribute("keyword", keyword); // 검색창에 검색어 유지, 페이지 링크에도 붙인다
         return "board/list";
     }
 
@@ -50,15 +68,16 @@ public class BoardController {
 
     // @GetMapping("/{id}") // 상세 : GET /board/3 (누구나)
     // public String detail(@PathVariable Long id, Model model) {
-    //     Post post = postService.findById(id);
-    //     model.addAttribute("post", post);
-    //     return "board/detail";
+    // Post post = postService.findById(id);
+    // model.addAttribute("post", post);
+    // return "board/detail";
     // }
 
     @GetMapping("/{id}") // [9주차 연습문제 ①] 상세 : GET /board/3 (누구나) + 조회수 1 증가
     public String detail(@PathVariable Long id, Model model) {
         Post post = postService.read(id); // findById → read : 열 때마다 viewCount + 1
         model.addAttribute("post", post);
+        model.addAttribute("comments", commentService.findByPost(post)); // ② 댓글 목록 → 화면에 댓글 영역
         return "board/detail";
     }
 
