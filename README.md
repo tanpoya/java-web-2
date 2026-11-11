@@ -301,3 +301,100 @@ Spring Boot 4.1 · Java 25 · Thymeleaf · Spring Data JPA · MySQL · Spring Se
 | 로그인 → 게시판 → 내가 쓴 글                | 버튼이 "전체 글 보기"로 바뀜            |
 | "전체 글 보기" 클릭                         | 전체 목록, 버튼은 다시 "내가 쓴 글"     |
 | 목록 → 글 상세 → 뒤로가기                   | 목록의 조회수가 1 늘어난 값으로 보임    |
+
+---
+
+## 10주차 연습문제 - 게시판 개선하기
+
+### ① 내가 쓴 글 페이징
+
+**문제** : 9주차 "내가 쓴 글"은 내 글을 한 번에 전부 꺼냈다. 전체 목록처럼 10개씩 나눠 보여 주고, 페이지 번호도 붙인다.
+
+**추가한 곳**
+
+- `PostRepository` : `Page<Post> findByAuthor_Username(String username, Pageable pageable);`
+- `PostService` : `findMinePage(username, page)` 메서드 추가
+- `BoardController` : 기존 `my()`는 주석으로 남기고, `page` 파라미터를 받는 새 `my()`를 추가
+
+**하는 일**
+
+- 메서드 이름 조회도 맨 뒤에 `Pageable`만 더하면 결과가 `Page`가 된다. `LIMIT · OFFSET · count` SQL은 스프링이 붙여 준다.
+- 정렬(최신 글이 위로)은 메서드 이름의 `OrderByIdDesc` 대신 `PageRequest.of(page, 10, Sort.by(DESC, "id"))`에 담아서 넘긴다. 전체 목록의 `findPage()`와 같은 방식이다.
+- 새 `my()`는 `posts`(이번 페이지의 글), `page`(페이지 정보), `pageUrl = "/board/my"`를 화면에 넘긴다.
+  - `list.html`의 페이지 번호는 `pageUrl`이 없으면 `/board`로 링크를 만든다. 그래서 `pageUrl`을 넘겨야 2페이지 링크가 `/board/my?page=1`이 되어 계속 내 글 안에서 이동한다.
+- `/board/my`는 9주차와 같이 `SecurityConfig`의 `permitAll()`에 들어 있지 않으므로 로그인하지 않으면 로그인 화면으로 이동한다.
+- 9주차의 `findMine()`, `findByAuthor_UsernameOrderByIdDesc()`는 지우지 않고 그대로 두었다.
+
+### ② 작성자로 검색
+
+**문제** : 검색 범위를 "제목+내용 / 작성자" 중에서 고를 수 있게 한다.
+
+**추가한 곳**
+
+- `PostRepository` : JPQL 메서드 `searchByWriter()` 추가
+
+```java
+@Query("SELECT p FROM Post p WHERE p.author.name LIKE %:name%")
+Page<Post> searchByWriter(@Param("name") String name, Pageable pageable);
+```
+
+- `PostService` : `findPage(type, keyword, page)` 추가 (기존 `findPage(keyword, page)`는 그대로 두고 다시 사용)
+- `BoardController` : 기존 `list()`는 주석으로 남기고, `type` 파라미터를 받는 새 `list()`를 추가
+
+**하는 일**
+
+- `p.author.name`은 글 → 작성자(Member) → 이름 순서로 따라간다. JPA가 `posts JOIN member`를 자동으로 만들어 준다.
+- `:name`은 단계 2의 `:keyword`처럼 **파라미터 바인딩**이다. 그래서 작성자 검색에도 SQL 인젝션이 통하지 않는다.
+- 서비스의 `findPage(type, keyword, page)`
+  - `type`이 `writer`이고 검색어가 있으면 → `searchByWriter()` (작성자 이름 검색)
+  - 그 밖에는 → 기존 `findPage(keyword, page)` (제목+내용 검색, 검색어가 없으면 전체)
+- 컨트롤러는 `@RequestParam(defaultValue = "all") String type`으로 받고 `type`을 화면에 넘긴다.
+  - `type`이 넘어오면 `list.html`에 검색 범위 선택 상자가 나타나고, 고른 값이 선택된 채로 유지된다.
+  - 페이지 링크에도 `type=writer`가 붙어서 작성자 검색 결과의 2페이지도 작성자 검색으로 이어진다.
+  - `writer`가 아닌 값(빈칸, 이상한 값)은 `all`로 바꿔서 기존 검색처럼 동작하게 했다.
+
+**결과 확인**
+
+| 하는 일                                 | 기대 결과                             |
+| --------------------------------------- | ------------------------------------- |
+| admin 로그인 → 내가 쓴 글               | 10개씩, 링크가 `/board/my?page=1`     |
+| 로그인 안 하고 `/board/my`              | 로그인 화면                           |
+| 작성자 선택 + "관리" 검색               | 관리자의 글만                         |
+| 제목+내용 선택 + "관리" 검색            | 제목·내용에 "관리"가 들어간 글만      |
+| 작성자 검색 결과 2페이지                | 주소에 `type=writer` 유지             |
+
+---
+
+## 10주차 추가 개선 - 댓글이 화면 밖으로 넘치는 문제
+
+**문제** : 띄어쓰기 없이 긴 댓글(예 : `ㅋㅋㅋㅋ…`, 긴 주소)을 쓰면 댓글이 카드 밖으로 밀려나고 가로 스크롤이 생겼다.
+
+**원인** : `.comment-content`의 `white-space: pre-wrap`은 줄바꿈을 그대로 보여 주지만, **공백이 있는 곳에서만** 줄을 바꾼다. 공백 없는 긴 글자는 한 단어로 취급되어 끊을 곳이 없으니 옆으로 계속 늘어났다. 글 내용(`.post-content`)과 제목도 같은 문제가 있었다.
+
+**바꾼 곳**
+
+- `static/css/board.css` 맨 아래에 규칙 추가 (기존 줄은 지우지 않고, 아래 규칙이 덮어쓴다)
+
+```css
+.comment-content,
+.post-content,
+.board-card h3,
+.board-title { overflow-wrap: anywhere; word-break: break-word; }
+.comment-item > .d-flex > .post-meta { min-width: 0; overflow-wrap: anywhere; }
+.comment-list + form textarea { resize: vertical; max-width: 100%; }
+```
+
+**하는 일**
+
+- `overflow-wrap: anywhere` : 한 줄에 들어갈 자리가 없으면 단어 중간에서라도 줄을 바꾼다. 그래서 긴 글자도 카드 너비 안에서 다음 줄로 내려간다.
+- `word-break: break-word` : 같은 동작을 예전 브라우저에서도 하게 하는 보조 설정이다.
+- 댓글뿐 아니라 글 내용, 상세 화면 제목, 목록 제목에도 같이 적용해서 같은 문제가 다른 곳에서 생기지 않게 했다.
+- 댓글 작성자 줄은 `d-flex` 안에 있다. flex 항목은 기본적으로 내용보다 작아지지 않으므로 `min-width: 0`을 주어 긴 이름이 삭제 버튼을 밀어내지 않게 했다.
+- 댓글 입력창은 위아래로만 크기를 바꿀 수 있게 해서, 끌어서 옆으로 늘려도 카드 밖으로 나가지 않게 했다.
+- 공백이 있는 일반 문장은 전처럼 단어 단위로 줄이 바뀐다. 단어 중간에서 끊기는 것은 공백 없이 너무 긴 글자일 때뿐이다.
+
+| 하는 일                                        | 기대 결과                               |
+| ---------------------------------------------- | --------------------------------------- |
+| 공백 없이 300자 정도의 댓글 등록               | 카드 안에서 여러 줄로 내려감, 가로 스크롤 없음 |
+| 긴 주소(URL)를 댓글로 등록                     | 카드 안에서 줄바꿈                      |
+| 보통 문장 댓글                                 | 전처럼 단어 단위로 줄바꿈               |

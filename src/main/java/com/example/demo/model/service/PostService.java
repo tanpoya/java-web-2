@@ -73,6 +73,21 @@ public class PostService {
         return postRepository.search(keyword.trim(), pageable); // 검색 결과도 10개씩
     }
 
+    // [10주차 연습문제 ②] 페이지 목록 + 검색 범위 선택 (type : all = 제목+내용, writer = 작성자)
+    public Page<Post> findPage(String type, String keyword, int page) {
+        if ("writer".equals(type) && keyword != null && !keyword.isBlank()) {
+            PageRequest pageable = PageRequest.of(Math.max(page, 0), PAGE_SIZE, Sort.by(Sort.Direction.DESC, "id"));
+            return postRepository.searchByWriter(keyword.trim(), pageable); // 작성자 검색도 10개씩
+        }
+        return findPage(keyword, page); // 그 밖에는 기존 제목+내용 검색 (검색어 없으면 전체)
+    }
+
+    // [10주차 연습문제 ①] 내가 쓴 글 페이지 목록 (10개씩, 최신 글이 위로)
+    public Page<Post> findMinePage(String username, int page) {
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), PAGE_SIZE, Sort.by(Sort.Direction.DESC, "id"));
+        return postRepository.findByAuthor_Username(username, pageable);
+    }
+
     public Post findById(Long id) { // 글 1개 (없으면 404 → templates/error/404.html)
         return postRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "글이 존재하지 않습니다."));

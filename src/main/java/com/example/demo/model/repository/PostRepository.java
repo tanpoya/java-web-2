@@ -24,5 +24,13 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE p.title LIKE %:keyword% OR p.content LIKE %:keyword%")
     Page<Post> search(@Param("keyword") String keyword, Pageable pageable);
 
+    // [10주차 연습문제 ①] 내가 쓴 글 페이징 : 마지막에 Pageable 만 더하면 Page 가 된다
+    // → 정렬(최신순)은 PageRequest 에 담아서 넘긴다 (LIMIT · OFFSET · count 는 스프링이 붙인다)
+    Page<Post> findByAuthor_Username(String username, Pageable pageable);
+
+    // [10주차 연습문제 ②] 작성자 이름에 검색어가 들어간 글 (글 → 작성자 → 이름 : posts JOIN member 자동)
+    @Query("SELECT p FROM Post p WHERE p.author.name LIKE %:name%")
+    Page<Post> searchByWriter(@Param("name") String name, Pageable pageable);
+
     boolean existsByAuthor(Member author); // 글 작성자가 존재하는지 (댓글 삭제 시 필요)
 }

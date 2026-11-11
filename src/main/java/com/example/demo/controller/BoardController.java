@@ -31,13 +31,27 @@ public class BoardController {
     // return "board/list";
     // }
     // 페이징 적용 (컨트롤러에서 페이지 번호를 받아서 서비스에 전달, 서비스에서 Page<Post>를 반환)
-    @GetMapping // 목록 : GET /board?page=0&keyword=스프링 (누구나)
+    // @GetMapping // 목록 : GET /board?page=0&keyword=스프링 (누구나)
+    // public String list(@RequestParam(defaultValue = "0") int page,
+    //         @RequestParam(required = false) String keyword, Model model) {
+    //     Page<Post> posts = postService.findPage(keyword, page);
+    //     model.addAttribute("posts", posts.getContent());
+    //     model.addAttribute("page", posts);
+    //     model.addAttribute("keyword", keyword); // 검색창에 검색어 유지, 페이지 링크에도 붙인다
+    //     return "board/list";
+    // }
+
+    // [10주차 연습문제 ②] 목록 + 검색 범위 선택 : GET /board?page=0&type=writer&keyword=홍길 (누구나)
+    @GetMapping
     public String list(@RequestParam(defaultValue = "0") int page,
-            @RequestParam(required = false) String keyword, Model model) {
-        Page<Post> posts = postService.findPage(keyword, page);
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "all") String type, Model model) {
+        if (!"writer".equals(type)) type = "all"; // 이상한 값(빈칸 등)은 제목+내용 검색으로
+        Page<Post> posts = postService.findPage(type, keyword, page);
         model.addAttribute("posts", posts.getContent());
         model.addAttribute("page", posts);
         model.addAttribute("keyword", keyword); // 검색창에 검색어 유지, 페이지 링크에도 붙인다
+        model.addAttribute("type", type); // 검색 범위 선택 상자가 나타나고, 페이지 링크에도 type 이 붙는다
         return "board/list";
     }
 
@@ -57,10 +71,22 @@ public class BoardController {
         }
     }
 
-    @GetMapping("/my") // [9주차 연습문제 ②] 내가 쓴 글 : GET /board/my (로그인 필요)
-    public String my(Principal principal, Model model) {
-        List<Post> posts = postService.findMine(principal.getName()); // 로그인한 사람의 글만
-        model.addAttribute("posts", posts);
+    // @GetMapping("/my") // [9주차 연습문제 ②] 내가 쓴 글 : GET /board/my (로그인 필요)
+    // public String my(Principal principal, Model model) {
+    //     List<Post> posts = postService.findMine(principal.getName()); // 로그인한 사람의 글만
+    //     model.addAttribute("posts", posts);
+    //     model.addAttribute("listTitle", "내가 쓴 글"); // 목록 화면 재사용, 제목만 변경
+    //     model.addAttribute("myList", true); // [9주차 개선 ①] 화면 버튼을 "전체 글 보기"로 바꾼다
+    //     return "board/list";
+    // }
+
+    // [10주차 연습문제 ①] 내가 쓴 글 + 페이징 : GET /board/my?page=0 (로그인 필요)
+    @GetMapping("/my")
+    public String my(@RequestParam(defaultValue = "0") int page, Principal principal, Model model) {
+        Page<Post> posts = postService.findMinePage(principal.getName(), page); // 내 글만 10개씩
+        model.addAttribute("posts", posts.getContent());
+        model.addAttribute("page", posts); // 페이지 번호가 나타난다
+        model.addAttribute("pageUrl", "/board/my"); // 페이지 링크를 /board 대신 /board/my?page=N 으로
         model.addAttribute("listTitle", "내가 쓴 글"); // 목록 화면 재사용, 제목만 변경
         model.addAttribute("myList", true); // [9주차 개선 ①] 화면 버튼을 "전체 글 보기"로 바꾼다
         return "board/list";
