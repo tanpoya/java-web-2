@@ -237,14 +237,13 @@ Spring Boot 4.1 · Java 25 · Thymeleaf · Spring Data JPA · MySQL · Spring Se
 
 **결과 확인**
 
-| 하는 일                           | 기대 결과                               |
-| --------------------------------- | --------------------------------------- |
-| 같은 글 상세를 3번 열기           | 조회 3                                  |
-| student1 로그인 → 내가 쓴 글      | student1의 글만, 제목 "내가 쓴 글"      |
-| 로그인 안 하고 `/board/my`        | 로그인 화면                             |
+| 하는 일                      | 기대 결과                          |
+| ---------------------------- | ---------------------------------- |
+| 같은 글 상세를 3번 열기      | 조회 3                             |
+| student1 로그인 → 내가 쓴 글 | student1의 글만, 제목 "내가 쓴 글" |
+| 로그인 안 하고 `/board/my`   | 로그인 화면                        |
 
-=============================================
----
+## =============================================
 
 ## 9주차 추가 개선 - 게시판 사용성 문제 해결
 
@@ -279,11 +278,11 @@ Spring Boot 4.1 · Java 25 · Thymeleaf · Spring Data JPA · MySQL · Spring Se
 
 ```html
 <script>
-    window.addEventListener('pageshow', function (event) {
-        if (event.persisted) {
-            location.reload();
-        }
-    });
+  window.addEventListener("pageshow", function (event) {
+    if (event.persisted) {
+      location.reload();
+    }
+  });
 </script>
 ```
 
@@ -296,11 +295,11 @@ Spring Boot 4.1 · Java 25 · Thymeleaf · Spring Data JPA · MySQL · Spring Se
 
 **결과 확인**
 
-| 하는 일                                     | 기대 결과                               |
-| ------------------------------------------- | --------------------------------------- |
-| 로그인 → 게시판 → 내가 쓴 글                | 버튼이 "전체 글 보기"로 바뀜            |
-| "전체 글 보기" 클릭                         | 전체 목록, 버튼은 다시 "내가 쓴 글"     |
-| 목록 → 글 상세 → 뒤로가기                   | 목록의 조회수가 1 늘어난 값으로 보임    |
+| 하는 일                      | 기대 결과                            |
+| ---------------------------- | ------------------------------------ |
+| 로그인 → 게시판 → 내가 쓴 글 | 버튼이 "전체 글 보기"로 바뀜         |
+| "전체 글 보기" 클릭          | 전체 목록, 버튼은 다시 "내가 쓴 글"  |
+| 목록 → 글 상세 → 뒤로가기    | 목록의 조회수가 1 늘어난 값으로 보임 |
 
 ---
 
@@ -355,13 +354,13 @@ Page<Post> searchByWriter(@Param("name") String name, Pageable pageable);
 
 **결과 확인**
 
-| 하는 일                                 | 기대 결과                             |
-| --------------------------------------- | ------------------------------------- |
-| admin 로그인 → 내가 쓴 글               | 10개씩, 링크가 `/board/my?page=1`     |
-| 로그인 안 하고 `/board/my`              | 로그인 화면                           |
-| 작성자 선택 + "관리" 검색               | 관리자의 글만                         |
-| 제목+내용 선택 + "관리" 검색            | 제목·내용에 "관리"가 들어간 글만      |
-| 작성자 검색 결과 2페이지                | 주소에 `type=writer` 유지             |
+| 하는 일                      | 기대 결과                         |
+| ---------------------------- | --------------------------------- |
+| admin 로그인 → 내가 쓴 글    | 10개씩, 링크가 `/board/my?page=1` |
+| 로그인 안 하고 `/board/my`   | 로그인 화면                       |
+| 작성자 선택 + "관리" 검색    | 관리자의 글만                     |
+| 제목+내용 선택 + "관리" 검색 | 제목·내용에 "관리"가 들어간 글만  |
+| 작성자 검색 결과 2페이지     | 주소에 `type=writer` 유지         |
 
 ---
 
@@ -379,9 +378,18 @@ Page<Post> searchByWriter(@Param("name") String name, Pageable pageable);
 .comment-content,
 .post-content,
 .board-card h3,
-.board-title { overflow-wrap: anywhere; word-break: break-word; }
-.comment-item > .d-flex > .post-meta { min-width: 0; overflow-wrap: anywhere; }
-.comment-list + form textarea { resize: vertical; max-width: 100%; }
+.board-title {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.comment-item > .d-flex > .post-meta {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.comment-list + form textarea {
+  resize: vertical;
+  max-width: 100%;
+}
 ```
 
 **하는 일**
@@ -393,8 +401,10 @@ Page<Post> searchByWriter(@Param("name") String name, Pageable pageable);
 - 댓글 입력창은 위아래로만 크기를 바꿀 수 있게 해서, 끌어서 옆으로 늘려도 카드 밖으로 나가지 않게 했다.
 - 공백이 있는 일반 문장은 전처럼 단어 단위로 줄이 바뀐다. 단어 중간에서 끊기는 것은 공백 없이 너무 긴 글자일 때뿐이다.
 
-| 하는 일                                        | 기대 결과                               |
-| ---------------------------------------------- | --------------------------------------- |
-| 공백 없이 300자 정도의 댓글 등록               | 카드 안에서 여러 줄로 내려감, 가로 스크롤 없음 |
-| 긴 주소(URL)를 댓글로 등록                     | 카드 안에서 줄바꿈                      |
-| 보통 문장 댓글                                 | 전처럼 단어 단위로 줄바꿈               |
+| 하는 일                          | 기대 결과                                      |
+| -------------------------------- | ---------------------------------------------- |
+| 공백 없이 300자 정도의 댓글 등록 | 카드 안에서 여러 줄로 내려감, 가로 스크롤 없음 |
+| 긴 주소(URL)를 댓글로 등록       | 카드 안에서 줄바꿈                             |
+| 보통 문장 댓글                   | 전처럼 단어 단위로 줄바꿈                      |
+
+# 11주차 파일 업로드 + 신청 바구니 + 트랜잭션 완료
