@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|${post.title} - 게시판|">글 보기 - 게시판</title>
+
+    <!-- [9주차 제공 → 10주차 수정] 게시글 상세 + 댓글 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/bootstrap-icons.css}" rel="stylesheet">
+    <link th:href="@{/css/templatemo-first-portfolio-style.css}" rel="stylesheet">
+    <link th:href="@{/css/board.css}" rel="stylesheet">
+</head>
+
+<body>
+    <header class="board-header">
+        <div class="container">
+            <a th:href="@{/board}" class="small"><i class="bi-arrow-left me-1"></i>목록으로</a>
+            <h1 class="mt-1"><i class="bi-chat-square-text me-2"></i>게시판</h1>
+        </div>
+    </header>
+
+    <main class="board-body">
+        <div class="container">
+            <div class="board-card">
+                <!-- post : 컨트롤러가 넘겨준 글 1개 -->
+                <h3 class="mb-2" th:text="${post.title}">제목</h3>
+                <div class="post-meta d-flex flex-wrap gap-3 pb-3 mb-3 border-bottom">
+                    <span><i class="bi-person me-1"></i><span th:text="${post.author.name}">홍길동</span>
+                        (<span th:text="${post.author.username}">student1</span>)</span>
+                    <span><i class="bi-clock me-1"></i><span
+                            th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">2026-10-20
+                            10:00</span></span>
+                    <span th:if="${post.updatedAt != null}"><i class="bi-pencil me-1"></i>수정 <span
+                            th:text="${#temporals.format(post.updatedAt, 'yyyy-MM-dd HH:mm')}"></span></span>
+                    <span><i class="bi-eye me-1"></i>조회 <span th:text="${post.viewCount}">0</span></span>
+                </div>
+
+                <!-- 줄바꿈을 그대로 보여 준다 (white-space: pre-wrap), th:text 라서 HTML 태그는 글자로 보인다 (XSS 방지) -->
+                <div class="post-content" th:text="${post.content}">내용</div>
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 border-top"
+                    th:with="isWriter=${#authentication != null and #authentication.name == post.author.username}">
+                    <a th:href="@{/board}" class="btn btn-outline-secondary btn-sm-custom"><i
+                            class="bi-list me-1"></i>목록</a>
+                    <div class="d-flex gap-2">
+                        <!-- 수정 버튼 : 글쓴이에게만 보인다 (화면 = 1차 안내, 진짜 검사는 서비스에서) -->
+                        <a th:if="${isWriter}" th:href="@{/board/{id}/edit(id=${post.id})}"
+                            class="btn btn-outline-primary btn-sm-custom"><i class="bi-pencil me-1"></i>수정</a>
+                        <!-- 삭제 버튼 : 글쓴이 또는 관리자 -->
+                        <form th:if="${isWriter}" sec:authorize="isAuthenticated()"
+                            th:action="@{/board/{id}/delete(id=${post.id})}" method="post" class="m-0"
+                            onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                            <button type="submit" class="btn btn-outline-danger btn-sm-custom"><i
+                                    class="bi-trash me-1"></i>삭제</button>
+                        </form>
+                        <form th:unless="${isWriter}" sec:authorize="hasRole('ADMIN')"
+                            th:action="@{/board/{id}/delete(id=${post.id})}" method="post" class="m-0"
+                            onsubmit="return confirm('관리자 권한으로 삭제하시겠습니까?');">
+                            <button type="submit" class="btn btn-outline-danger btn-sm-custom"><i
+                                    class="bi-shield-lock me-1"></i>관리자 삭제</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- [10주차 제공] 댓글 : 컨트롤러가 comments 를 넘겨줄 때만 보인다 (단계 3) -->
+            <div class="board-card mt-4" id="comments" th:if="${comments != null}">
+                <h5 class="mb-3"><i class="bi-chat-dots me-2"></i>댓글 <small class="text-muted"
+                        th:text="${#lists.size(comments)}">0</small></h5>
+                <div th:if="${param.commentError}" class="alert alert-danger py-2"><i
+                        class="bi-exclamation-circle me-1"></i> 댓글은 1~500자로 입력하세요.</div>
+                <div th:if="${param.commentDeleted}" class="alert alert-secondary py-2"><i class="bi-trash me-1"></i>
+                    댓글이 삭제되었습니다.</div>
+
+                <ul class="comment-list">
+                    <!-- comment.author.name : 댓글 → 작성자(Member) → 이름 (글과 같은 @ManyToOne) -->
+                    <li th:each="comment : ${comments}" class="comment-item"
+                        th:with="isCommentWriter=${#authentication != null and #authentication.name == comment.author.username}">
+                        <div class="d-flex justify-content-between align-items-center gap-2">
+                            <div class="post-meta">
+                                <strong class="text-dark" th:text="${comment.author.name}">홍길동</strong>
+                                (<span th:text="${comment.author.username}">student1</span>)
+                                <span class="ms-2"
+                                    th:text="${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}">2026-11-10
+                                    10:00</span>
+                            </div>
+                            <!-- 삭제 버튼 : 댓글 쓴 사람 또는 관리자 (진짜 검사는 서비스에서, 단계 4) -->
+                            <form th:if="${isCommentWriter}"
+                                th:action="@{/board/{pid}/comments/{cid}/delete(pid=${post.id},cid=${comment.id})}"
+                                method="post" class="m-0" onsubmit="return confirm('댓글을 삭제하시겠습니까?');">
+                                <button type="submit" class="btn btn-link btn-sm text-danger p-0"><i
+                                        class="bi-x-circle me-1"></i>삭제</button>
+                            </form>
+                            <form th:unless="${isCommentWriter}" sec:authorize="hasRole('ADMIN')"
+                                th:action="@{/board/{pid}/comments/{cid}/delete(pid=${post.id},cid=${comment.id})}"
+                                method="post" class="m-0" onsubmit="return confirm('관리자 권한으로 댓글을 삭제하시겠습니까?');">
+                                <button type="submit" class="btn btn-link btn-sm text-danger p-0"><i
+                                        class="bi-shield-lock me-1"></i>관리자 삭제</button>
+                            </form>
+                        </div>
+                        <div class="comment-content" th:text="${comment.content}">댓글 내용</div>
+                    </li>
+                    <li th:if="${#lists.isEmpty(comments)}" class="text-muted py-3">아직 댓글이 없습니다. 첫 댓글을 남겨 보세요!</li>
+                </ul>
+
+                <!-- 댓글 쓰기 : 로그인한 사람만. POST /board/{id}/comments (th:action → CSRF 토큰 자동) -->
+                <form sec:authorize="isAuthenticated()" th:action="@{/board/{id}/comments(id=${post.id})}" method="post"
+                    class="mt-3">
+                    <textarea name="content" class="form-control" rows="3" maxlength="500"
+                        placeholder="댓글을 입력하세요 (500자까지)"></textarea>
+                    <div class="text-end mt-2">
+                        <button type="submit" class="btn btn-primary btn-sm-custom"><i class="bi-send me-1"></i>댓글
+                            등록</button>
+                    </div>
+                </form>
+                <p sec:authorize="isAnonymous()" class="text-muted mt-3 mb-0">
+                    <a th:href="@{/login}">로그인</a>하면 댓글을 쓸 수 있습니다.
+                </p>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

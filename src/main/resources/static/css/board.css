@@ -44,3 +44,12 @@ body { background: #f4f6fb; }
 .board-title { overflow-wrap: anywhere; word-break: break-word; }
 .comment-item > .d-flex > .post-meta { min-width: 0; overflow-wrap: anywhere; } /* 긴 이름도 삭제 버튼을 밀어내지 않게 */
 .comment-list + form textarea { resize: vertical; max-width: 100%; } /* 입력창을 옆으로 늘려 카드 밖으로 나가지 않게 */
+
+/* [11주차 추가] 모집글 · 포스터 · 신청 바구니 */
+.recruit-setting { background: #f7f9fc; border: 1px dashed #c9d3e6; border-radius: var(--border-radius-small); padding: 16px; }
+.recruit-box { background: #f7f9fc; border-radius: var(--border-radius-small); padding: 16px; }
+.recruit-poster { width: 180px; max-height: 240px; object-fit: cover; border-radius: var(--border-radius-small); box-shadow: 0 .25rem 1rem rgba(0, 0, 0, .12); }
+.recruit-badge { display: inline-block; font-size: 12px; background: #e6f4ea; color: #1e7e34; padding: 2px 8px; border-radius: 10px; font-weight: var(--font-weight-medium); }
+.recruit-badge.closed { background: #fdecea; color: #c0392b; }
+.progress-bar { background: var(--primary-color); }
+.cart-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; background: #eef2ff; }
