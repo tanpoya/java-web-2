@@ -133,6 +133,9 @@
     </style>
     <!-- [반응형 5단계] 휴대폰 화면 규칙 : 위 <style> 보다 뒤에 연결해야 이 규칙이 적용된다 -->
     <link th:href="@{/css/admin.css}" rel="stylesheet">
+    <!-- [디자인 2단계] 라이트 · 다크 모드 테마 (각 화면 <style> · admin.css 뒤에 연결해서 덮어쓴다) + 모드 정하기 스크립트 -->
+    <link th:href="@{/css/theme.css}" rel="stylesheet">
+    <script th:src="@{/js/theme.js}"></script>
 </head>
 
 <body>
