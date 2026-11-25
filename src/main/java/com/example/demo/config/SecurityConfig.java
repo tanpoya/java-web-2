@@ -48,6 +48,7 @@ public class SecurityConfig {
                                                                                                            // : 누구나
                                                 .requestMatchers("/uploads/**").permitAll() // [11주차] 포스터 이미지 : 누구나
                                                                                             // (올리기는 글쓰기라서 로그인)
+                                                .requestMatchers("/ws").permitAll() // [12주차] 실시간 연결 : 누구나
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form // 2. 폼 로그인 설정 (인증)
                                                 .loginPage("/login")
