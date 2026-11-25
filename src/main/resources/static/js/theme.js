@@ -370,3 +370,41 @@ window.hzMe = function () {
         mq.addEventListener('change', function (e) { if (e.matches) init(); });
     });
 })();
+
+// [여백 활용 ⑦] 맨 위로 버튼 + 페이지 위치 고리 (모든 화면 크기)
+// - 300px 넘게 내려오면 나타난다
+// - 버튼 둘레 고리가 지금 위치만큼(0 ~ 100%) 채워진다 → CSS 변수 --p 를 바꾸면 conic-gradient 가 다시 그려진다
+// - 스크롤할 때마다 바로 계산하지 않고 requestAnimationFrame 으로 화면 그릴 때 한 번만 (가볍게)
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+        const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'to-top';
+        btn.title = '맨 위로';
+        btn.setAttribute('aria-label', '맨 위로');
+        btn.innerHTML = '<span><i class="bi-arrow-up"></i></span>';
+        document.body.appendChild(btn);
+
+        let ticking = false;
+        function update() {
+            const doc = document.documentElement;
+            const max = doc.scrollHeight - window.innerHeight;           // 끝까지 내렸을 때의 위치
+            const y = window.scrollY || doc.scrollTop;
+            const pct = max > 0 ? Math.min(100, Math.round(y / max * 100)) : 0;
+            btn.style.setProperty('--p', pct + '%');
+            btn.classList.toggle('show', y > 300);
+            btn.title = '맨 위로 (' + pct + '%)';
+            ticking = false;
+        }
+        window.addEventListener('scroll', function () {
+            if (!ticking) { ticking = true; requestAnimationFrame(update); }
+        }, { passive: true });                                             // passive : 스크롤을 막지 않는다고 알려 줘서 부드럽게
+        window.addEventListener('resize', update);
+
+        btn.addEventListener('click', function () {
+            window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });   // 동작 줄이기면 바로 이동
+        });
+        update();
+    });
+})();
