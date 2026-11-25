@@ -1,0 +1,224 @@
+/* =====================================================================
+   [디자인 1단계] 공통 테마 : 라이트 모드 / 다크 모드
+   - 참고 디자인 : 어두운 배경 + 조금 밝은 둥근 카드 + 민트→보라 그라데이션 + 알약 모양 버튼
+   - 색은 모두 아래 변수(--hz-...)로만 정하고, 모드에 따라 변수 값만 바꾼다.
+     <html data-theme="light"> / <html data-theme="dark"> 는 js/theme.js 가 붙인다.
+   - 기존 board.css 등은 그대로 두고, 이 파일을 그 뒤에 연결해서 덮어쓴다.
+   ===================================================================== */
+
+/* 한글이 깔끔한 Pretendard 글꼴 (영문은 기존 DM Sans 와 비슷한 느낌) */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+/* ---------- 1. 색 변수 ---------- */
+:root,
+:root[data-theme="light"] {
+    color-scheme: light;
+    --hz-bg: #f3f4f8;               /* 페이지 배경 */
+    --hz-surface: #ffffff;          /* 카드 */
+    --hz-surface-2: #f1f2f7;        /* 카드 안 상자 · 입력칸 */
+    --hz-border: #e2e4ec;
+    --hz-text: #1b1d26;
+    --hz-muted: #6c7183;
+    --hz-teal: #22b3a6;
+    --hz-purple: #7b61ff;
+    --hz-grad: linear-gradient(90deg, #2ec4b6 0%, #7b61ff 100%);
+    --hz-btn-teal: #e3f6f4;         /* 민트 버튼 (연한 바탕 + 진한 글자) */
+    --hz-btn-teal-text: #12877c;
+    --hz-btn-purple: #ece8ff;
+    --hz-btn-purple-text: #5b45e0;
+    --hz-hero: radial-gradient(1200px 300px at 20% 0%, rgba(46, 196, 182, .18), transparent 60%),
+               radial-gradient(900px 300px at 85% 10%, rgba(123, 97, 255, .20), transparent 60%),
+               #e9ebf5;
+    --hz-hero-text: #1b1d26;
+    --hz-hero-muted: #5c6175;
+    --hz-badge-bg: rgba(20, 22, 30, .72);  /* 사진 위 작은 알약 배지 */
+    --hz-shadow: 0 .5rem 1.5rem rgba(30, 34, 60, .08);
+    --hz-danger: #e0465a;
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --hz-bg: #0e0f13;
+    --hz-surface: #1a1b21;
+    --hz-surface-2: #24262e;
+    --hz-border: #2d3039;
+    --hz-text: #e9eaf0;
+    --hz-muted: #8d92a3;
+    --hz-teal: #4fd1c5;
+    --hz-purple: #8f7bff;
+    --hz-grad: linear-gradient(90deg, #4fd1c5 0%, #8b5cf6 100%);
+    --hz-btn-teal: #1f4f4c;
+    --hz-btn-teal-text: #c9f3ee;
+    --hz-btn-purple: #3b3480;
+    --hz-btn-purple-text: #e4defe;
+    --hz-hero: radial-gradient(1200px 320px at 20% 0%, rgba(79, 209, 197, .16), transparent 60%),
+               radial-gradient(900px 320px at 85% 10%, rgba(139, 92, 246, .22), transparent 60%),
+               #121319;
+    --hz-hero-text: #ffffff;
+    --hz-hero-muted: #a9aec0;
+    --hz-badge-bg: rgba(0, 0, 0, .65);
+    --hz-shadow: none;
+    --hz-danger: #ff6b7d;
+}
+
+/* 템플릿 변수도 새 색으로 (기존 CSS 가 var(--primary-color) 등을 쓰는 곳이 함께 바뀐다) */
+:root {
+    --primary-color: var(--hz-purple);
+    --secondary-color: var(--hz-teal);
+    --p-color: var(--hz-muted);
+    --body-font-family: 'Pretendard', 'DM Sans', sans-serif;
+}
+
+/* ---------- 2. 기본 ---------- */
+body {
+    background: var(--hz-bg);
+    color: var(--hz-text);
+    font-family: 'Pretendard', 'DM Sans', sans-serif;
+    transition: background-color .2s, color .2s;
+}
+h1, h2, h3, h4, h5, h6 { color: var(--hz-text); }
+.text-muted, .post-meta { color: var(--hz-muted) !important; }
+a { color: var(--hz-teal); }
+code { color: var(--hz-purple); }
+
+/* 그라데이션 글자 (참고 디자인의 "HEZ Point Shop" 제목) */
+.hz-grad-text,
+.board-header h1 {
+    background: var(--hz-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* ---------- 3. 머리 부분 (배너) ---------- */
+.board-header {
+    background: var(--hz-hero);
+    color: var(--hz-hero-text);
+    border-bottom: 1px solid var(--hz-border);
+}
+.board-header a:not(.btn) { color: var(--hz-hero-muted); }
+.board-header a:not(.btn):hover { color: var(--hz-hero-text); }
+.board-header strong, .board-header span { color: var(--hz-hero-text); }
+.board-header h1 * { color: transparent !important; }        /* 제목 안 글자도 그라데이션이 보이게 */
+.board-header h1 { width: fit-content; }                 /* 그라데이션이 글자 길이만큼만 (짧은 제목도 민트→보라가 다 보이게) */
+.board-header .badge { color: #fff; }                         /* 알림 개수 · 바구니 개수 배지는 흰 글자 */
+.board-header .rt-status { color: var(--hz-hero-muted); }
+.board-header .rt-status.on { color: var(--hz-teal); }
+.noti-bell { color: var(--hz-hero-text); }
+
+/* ---------- 4. 카드 ---------- */
+.board-card {
+    background: var(--hz-surface);
+    border: 1px solid var(--hz-border);
+    border-radius: 18px;
+    box-shadow: var(--hz-shadow);
+    color: var(--hz-text);
+}
+
+/* ---------- 5. 버튼 : 알약 모양 ---------- */
+.btn-sm-custom, .board-card .btn, .board-header .btn { border-radius: 999px; }
+.btn-primary {                                   /* 주 버튼 = 그라데이션 (참고 디자인의 "전체" 탭) */
+    background: var(--hz-grad); border: 0; color: #fff;
+}
+.btn-primary:hover, .btn-primary:focus { filter: brightness(1.08); color: #fff; background: var(--hz-grad); }
+.btn-outline-primary {                           /* 보조 버튼 = 연한 보라 (참고 디자인의 "구매하기") */
+    background: var(--hz-btn-purple); border-color: transparent; color: var(--hz-btn-purple-text);
+}
+.btn-outline-primary:hover { background: var(--hz-purple); border-color: transparent; color: #fff; }
+.btn-outline-secondary {
+    background: var(--hz-surface-2); border-color: var(--hz-border); color: var(--hz-text);
+}
+.btn-outline-secondary:hover { background: var(--hz-border); border-color: var(--hz-border); color: var(--hz-text); }
+.btn-outline-danger { border-color: var(--hz-danger); color: var(--hz-danger); background: transparent; }
+.btn-outline-danger:hover { background: var(--hz-danger); color: #fff; }
+.board-header .btn-light {                       /* 머리 부분 버튼 = 테두리 알약 (참고 디자인의 "회원가입") */
+    background: transparent; border: 1px solid var(--hz-hero-muted); color: var(--hz-hero-text);
+}
+.board-header .btn-light:hover { background: var(--hz-hero-text); color: var(--hz-bg); }
+.btn-link.text-danger, .text-danger { color: var(--hz-danger) !important; }
+
+/* ---------- 6. 입력칸 ---------- */
+.form-control, .form-select {
+    background-color: var(--hz-surface-2);
+    border-color: var(--hz-border);
+    color: var(--hz-text);
+}
+.form-control:focus, .form-select:focus {
+    background-color: var(--hz-surface-2);
+    color: var(--hz-text);
+    border-color: var(--hz-purple);
+    box-shadow: 0 0 0 .2rem rgba(123, 97, 255, .2);
+}
+.form-control::placeholder { color: var(--hz-muted); }
+.form-label { color: var(--hz-text); }
+.board-search .form-control, .board-search .form-select { border-radius: 999px; }
+
+/* ---------- 7. 표 (목록) ---------- */
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-hover-bg: var(--hz-surface-2);
+    --bs-table-hover-color: var(--hz-text);
+    color: var(--hz-text);
+    border-color: var(--hz-border);
+}
+.table > :not(:first-child) { border-top-color: var(--hz-border); }
+.board-table th { color: var(--hz-muted); }
+.board-title { color: var(--hz-text); }
+.board-title:hover { color: var(--hz-teal); }
+
+/* ---------- 8. 작은 표시들 ---------- */
+.recruit-badge { background: rgba(46, 196, 182, .15); color: var(--hz-teal); }
+.recruit-badge.closed { background: rgba(224, 70, 90, .15); color: var(--hz-danger); }
+.edited-badge { background: var(--hz-btn-purple); color: var(--hz-btn-purple-text); }
+.comment-count { color: var(--hz-purple); }
+.search-info { background: var(--hz-surface-2); color: var(--hz-text); border: 1px solid var(--hz-border); }
+.recruit-box, .recruit-setting { background: var(--hz-surface-2); border-color: var(--hz-border); }
+.progress { background-color: var(--hz-border); }
+.progress-bar { background: var(--hz-grad); }
+.comment-item { border-bottom-color: var(--hz-border); }
+.comment-content, .post-content { color: var(--hz-text); }
+.text-dark { color: var(--hz-text) !important; }
+.border-bottom, .border-top { border-color: var(--hz-border) !important; }
+.cart-thumb { background: var(--hz-surface-2); }
+.text-primary { color: var(--hz-teal) !important; }          /* 남은 자리 숫자 등 : 부트스트랩 파란색 대신 민트 */
+/* 반응형 단계에서 넣은 휴대폰 목록 구분선(#edf0f5 고정색) → 모드에 맞는 선 색 */
+.board-list tbody tr, .cart-list tbody tr, .enroll-list tbody tr { border-bottom-color: var(--hz-border) !important; }
+
+/* 페이지 번호 : 알약 + 현재 페이지는 그라데이션 */
+.pagination { gap: 6px; }
+.pagination .page-link {
+    background: var(--hz-surface-2); border: 1px solid var(--hz-border); color: var(--hz-text);
+    border-radius: 999px !important; min-width: 38px; text-align: center;
+}
+.pagination .page-item.active .page-link { background: var(--hz-grad); border-color: transparent; color: #fff; }
+.pagination .page-item.disabled .page-link { background: transparent; border-color: var(--hz-border); color: var(--hz-muted); }
+
+/* 다크 모드 선택 상자 화살표 : 부트스트랩 기본 화살표는 진한 회색이라 어두운 바탕에서 안 보인다 → 밝은 회색 화살표 */
+:root[data-theme="dark"] .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23a9aec0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+}
+
+/* 알림 상자 (성공 · 실패 · 안내) */
+.alert { border-radius: 12px; }
+:root[data-theme="dark"] .alert-success { background: #12332f; border-color: #1f4f4a; color: #a6eee5; }
+:root[data-theme="dark"] .alert-danger { background: #3a1820; border-color: #5a2430; color: #ffb3bd; }
+:root[data-theme="dark"] .alert-secondary,
+:root[data-theme="dark"] .alert-light { background: var(--hz-surface-2); border-color: var(--hz-border) !important; color: var(--hz-text); }
+
+/* 사진 위 작은 배지 (참고 디자인의 "1일 06:38:30") */
+.hz-badge {
+    display: inline-block; background: var(--hz-badge-bg); color: #fff;
+    font-size: 12px; padding: 3px 10px; border-radius: 999px;
+}
+
+/* ---------- 9. 모드 바꾸기 버튼 (js/theme.js 가 화면 왼쪽 아래에 넣는다) ---------- */
+.theme-toggle {
+    position: fixed; left: 16px; bottom: 16px; z-index: 1085;
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 1px solid var(--hz-border); background: var(--hz-surface); color: var(--hz-text);
+    box-shadow: 0 .4rem 1.2rem rgba(0, 0, 0, .18);
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+    cursor: pointer; transition: transform .15s;
+}
+.theme-toggle:hover { transform: translateY(-2px); }
+.theme-toggle:focus-visible { outline: 2px solid var(--hz-purple); outline-offset: 2px; }

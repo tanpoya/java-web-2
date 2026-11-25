@@ -101,6 +101,14 @@ body { background: #f4f6fb; }
     .pagination .page-link { padding: 4px 10px; font-size: 14px; }
 }
 
+/* [게시판 개선] 처음 · 끝 버튼 추가 후 페이지 번호 줄 : 휴대폰(576px 미만)에서 한 줄에 들어가게
+   현재 페이지 ±1 만 보이고(±2 = page-far 숨김), 버튼 간격 · 너비를 줄인다 → 처음 · 이전 · 3개 · 다음 · 끝 = 7칸 */
+@media (max-width: 575.98px) {
+    .pagination .page-item.page-far { display: none; }
+    .pagination { gap: 4px !important; }
+    .pagination .page-link { min-width: 34px !important; padding: 4px 8px !important; }
+}
+
 /* [반응형 2단계] 게시글 상세 · 글쓰기 · 댓글 · 실시간 알림 (768px 미만) */
 @media (max-width: 767.98px) {
     /* 상세 제목 : 테마 h3 크기는 휴대폰에서 너무 커서 두세 줄을 차지한다 */
