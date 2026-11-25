@@ -35,7 +35,8 @@
             try { localStorage.setItem(KEY, next); } catch (e) { /* 저장이 안 돼도 이번 화면에서는 바뀐다 */ }
             apply(next);
         });
-        document.body.appendChild(btn);
+        // document.body.appendChild(btn);
+        window.hzDock('left').appendChild(btn);   // [여백 활용 ⑤-3] 왼쪽 아래 버튼 모음으로
         apply(root.getAttribute('data-theme'));
     });
 
@@ -98,7 +99,8 @@
             '</div>' +
             '<button type="button" class="glow-ctrl-btn" id="glow-ctrl-btn" aria-expanded="false" aria-controls="glow-ctrl-panel"' +
             ' title="배경 빛 세기 · 속도 조절" aria-label="배경 빛 세기 · 속도 조절"><i class="bi-sliders"></i></button>';
-        document.body.appendChild(box);
+        // document.body.appendChild(box);
+        window.hzDock('right').appendChild(box);  // [여백 활용 ⑤-3] 오른쪽 아래 버튼 모음으로
 
         const panel = box.querySelector('#glow-ctrl-panel');
         const btn = box.querySelector('#glow-ctrl-btn');
@@ -138,6 +140,49 @@ window.hzMe = function () {
             .catch(function () { return null; });
     }
     return window.hzMePromise;
+};
+
+// [여백 활용 ⑤-3] 화면 구석 버튼 모음(dock) : 왼쪽 아래 · 오른쪽 아래에 버튼을 차례로 쌓는다
+// - 버튼마다 bottom 값을 따로 정하면, 어떤 버튼이 숨거나 생길 때 서로 겹친다 → 한 상자(flex)에 넣으면 알아서 쌓인다
+// - 쌓는 순서는 CSS order 로 고정 (버튼이 만들어지는 시점이 달라도 순서가 같게)
+window.hzDock = function (side) {                  // side = 'left' | 'right'
+    let d = document.querySelector('.hz-dock-' + side);
+    if (!d) {
+        d = document.createElement('div');
+        d.className = 'hz-dock hz-dock-' + side;
+        document.body.appendChild(d);
+    }
+    return d;
+};
+
+// [여백 활용 ⑤-3] 동그란 버튼 + 누르면 버튼 위로 열리는 카드 (빛 조절 버튼과 같은 방식)
+// opts = { cls, icon, label } → { panel, setOpen } 을 돌려준다
+window.hzDockPanel = function (side, opts) {
+    const wrap = document.createElement('div');
+    wrap.className = 'hz-pop ' + opts.cls;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'hz-pop-btn';
+    btn.title = opts.label;
+    btn.setAttribute('aria-label', opts.label);
+    btn.setAttribute('aria-expanded', 'false');
+    btn.innerHTML = '<i class="' + opts.icon + '"></i>';   // 고정된 아이콘이라 innerHTML 사용
+    const panel = document.createElement('div');
+    panel.className = 'hz-pop-panel';
+    panel.id = opts.cls + '-panel';
+    btn.setAttribute('aria-controls', panel.id);
+    wrap.appendChild(panel);
+    wrap.appendChild(btn);
+
+    function setOpen(open) {
+        wrap.classList.toggle('open', open);
+        btn.setAttribute('aria-expanded', String(open));
+    }
+    btn.addEventListener('click', function (e) { e.stopPropagation(); setOpen(!wrap.classList.contains('open')); });
+    document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) setOpen(false); });   // 바깥을 누르면 닫기
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });       // Esc 로 닫기
+    window.hzDock(side).appendChild(wrap);
+    return { panel: panel, setOpen: setOpen };
 };
 
 // [여백 활용 ⑤] 왼쪽 빠른 메뉴 : 로그인 정보 + 바로가기 (참고 디자인 왼쪽의 프로필 상자처럼)
@@ -213,23 +258,90 @@ window.hzMe = function () {
             ul.appendChild(li);
         });
         card.appendChild(ul);
-        document.body.appendChild(box);
+        // document.body.appendChild(box);
+        return card;                              // [여백 활용 ⑤-2] 카드만 돌려주고, 어디에 둘지는 place() 가 정한다
     }
 
-    function init() {
-        if (document.querySelector('.side-menu')) return;      // 한 번만
-        // fetch('/api/me', { headers: { 'Accept': 'application/json' } })
-        //     .then(function (res) { return res.ok ? res.json() : null; })
-        //     .catch(function () { return null; })
-        //     .then(build);
-        window.hzMe().then(build);                // [여백 활용 ⑥] 오른쪽 위젯과 같이 쓰도록 공용 함수로 (한 번만 요청)
+    // function init() {
+    //     if (document.querySelector('.side-menu')) return;
+    //     window.hzMe().then(build);
+    // }
+    // document.addEventListener('DOMContentLoaded', function () {
+    //     if (!window.matchMedia) return;
+    //     const mq = window.matchMedia(WIDE);
+    //     if (mq.matches) init();
+    //     mq.addEventListener('change', function (e) { if (e.matches) init(); });
+    // });
+
+    // [여백 활용 ⑤-2 → ⑤-3] 여백이 없을 때(1860px 미만) : "메뉴" 버튼 → 누르면 같은 카드가 펼쳐진다
+    // 카드는 하나만 만들고, 화면 폭이 바뀌면 왼쪽 여백 ↔ 펼침 상자 사이로 "옮긴다"
+    let card = null, wideBox = null, drop = null;
+
+    // [여백 활용 ⑤-3] 이전 : 화면마다 머리 부분 · 메뉴 줄 · 오른쪽 위를 찾아 버튼을 넣었다 → 빛 조절 버튼처럼 왼쪽 아래 고정 버튼으로 바꿈
+    // function makeDrop() {
+    //     const wrap = el('div', 'qm');
+    //     const btn = el('button', 'qm-btn');
+    //     btn.type = 'button';
+    //     btn.setAttribute('aria-expanded', 'false');
+    //     btn.setAttribute('aria-controls', 'qm-panel');
+    //     btn.setAttribute('aria-label', '빠른 메뉴 열기');
+    //     btn.innerHTML = '<i class="bi-list"></i><span>메뉴</span>';   // 고정된 아이콘 · 글자라 innerHTML 사용
+    //     const panel = el('div', 'qm-panel');
+    //     panel.id = 'qm-panel';
+    //     wrap.appendChild(btn);
+    //     wrap.appendChild(panel);
+
+    //     function setOpen(open) {
+    //         wrap.classList.toggle('open', open);
+    //         btn.setAttribute('aria-expanded', String(open));
+    //     }
+    //     btn.addEventListener('click', function (e) { e.stopPropagation(); setOpen(!wrap.classList.contains('open')); });
+    //     document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) setOpen(false); });   // 바깥을 누르면 닫기
+    //     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });       // Esc 로 닫기
+
+    //     // 버튼 자리 : 화면마다 들어갈 곳이 다르다
+    //     const head = document.querySelector('.board-header .container > div:first-child, .admin-header .container > div:first-child');
+    //     const nav = document.querySelector('.navbar .container');
+    //     if (head) {                                // 게시판 · 바구니 · 관리자 : 머리 부분 맨 앞 ("메인으로" 링크 앞)
+    //         wrap.classList.add('qm-inline');
+    //         head.insertBefore(wrap, head.firstChild);
+    //     } else if (nav) {                          // 메인 : 메뉴 줄의 "First" 로고 앞 (휴대폰은 메인 메뉴 햄버거가 있어서 CSS 로 숨김)
+    //         wrap.classList.add('qm-inline', 'qm-nav');
+    //         nav.insertBefore(wrap, nav.querySelector('.navbar-brand'));
+    //     } else {                                   // 로그인 · 회원가입 · 내 정보 · 에러 · testdb : 머리 부분이 없으니 화면 오른쪽 위
+    //         wrap.classList.add('qm-fixed');
+    //         document.body.appendChild(wrap);
+    //     }
+    //     return { panel: panel, setOpen: setOpen };
+    // }
+
+    function makeDrop() {                         // 왼쪽 아래 동그란 버튼, 누르면 버튼 위로 카드가 열린다
+        return window.hzDockPanel('left', { cls: 'qm', icon: 'bi-list', label: '빠른 메뉴' });
+    }
+
+    function place(wide) {
+        if (!card) return;
+        if (wide) {                                // 넓은 화면 : 왼쪽 여백 (기존 빠른 메뉴)
+            if (!wideBox) {
+                wideBox = el('aside', 'side-menu');
+                wideBox.setAttribute('aria-label', '빠른 메뉴');
+                document.body.appendChild(wideBox);
+            }
+            if (drop) drop.setOpen(false);
+            wideBox.appendChild(card);
+        } else {                                   // 좁은 화면 : 펼침 상자 안으로
+            if (!drop) drop = makeDrop();
+            drop.panel.appendChild(card);
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        if (!window.matchMedia) return;
-        const mq = window.matchMedia(WIDE);
-        if (mq.matches) init();
-        mq.addEventListener('change', function (e) { if (e.matches) init(); });   // 창을 넓히면 그때 만든다
+        window.hzMe().then(function (me) {         // 이제 모든 화면 폭에서 로그인 정보가 필요하다
+            card = build(me);
+            const mq = window.matchMedia ? window.matchMedia(WIDE) : { matches: false, addEventListener: function () { } };
+            place(mq.matches);
+            mq.addEventListener('change', function (e) { place(e.matches); });   // 창 크기를 바꾸면 카드를 옮긴다
+        });
     });
 })();
 
@@ -349,25 +461,61 @@ window.hzMe = function () {
         return card;
     }
 
-    function init() {
-        if (document.querySelector('.side-widget')) return;
-        const box = el('aside', 'side-widget');
-        box.setAttribute('aria-label', '모집 중 · 최근 알림');
-        document.body.appendChild(box);
+    // [여백 활용 ⑥-2] 이전 : 넓은 화면에서만 만들었다
+    // function init() {
+    //     if (document.querySelector('.side-widget')) return;
+    //     const box = el('aside', 'side-widget');
+    //     box.setAttribute('aria-label', '모집 중 · 최근 알림');
+    //     document.body.appendChild(box);
 
+    //     fetch('/api/posts/recruiting', { headers: { 'Accept': 'application/json' } })
+    //         .then(function (res) { return res.ok ? res.json() : []; })
+    //         .catch(function () { return []; })
+    //         .then(function (list) { box.insertBefore(recruitCard(list), box.firstChild); });
+
+    //     window.hzMe().then(function (me) { if (me) box.appendChild(notiCard()); });
+    // }
+
+    // document.addEventListener('DOMContentLoaded', function () {
+    //     if (!window.matchMedia) return;
+    //     const mq = window.matchMedia(WIDE);
+    //     if (mq.matches) init();
+    //     mq.addEventListener('change', function (e) { if (e.matches) init(); });
+    // });
+
+    // [여백 활용 ⑥-2] 왼쪽 메뉴와 같은 방식 : 내용(inner)은 하나만 만들고
+    // 넓은 화면(1860px 이상)은 오른쪽 여백, 좁은 화면은 오른쪽 아래 동그란 버튼(🔔) → 누르면 버튼 위로 열린다
+    let inner = null, wideBox = null, drop = null;
+
+    function buildInner() {
+        inner = el('div', 'side-widget-inner');
         fetch('/api/posts/recruiting', { headers: { 'Accept': 'application/json' } })
             .then(function (res) { return res.ok ? res.json() : []; })
             .catch(function () { return []; })
-            .then(function (list) { box.insertBefore(recruitCard(list), box.firstChild); });
+            .then(function (list) { inner.insertBefore(recruitCard(list), inner.firstChild); });
+        window.hzMe().then(function (me) { if (me) inner.appendChild(notiCard()); });
+    }
 
-        window.hzMe().then(function (me) { if (me) box.appendChild(notiCard()); });
+    function place(wide) {
+        if (wide) {
+            if (!wideBox) {
+                wideBox = el('aside', 'side-widget');
+                wideBox.setAttribute('aria-label', '모집 중 · 최근 알림');
+                document.body.appendChild(wideBox);
+            }
+            if (drop) drop.setOpen(false);
+            wideBox.appendChild(inner);
+        } else {
+            if (!drop) drop = window.hzDockPanel('right', { cls: 'qw', icon: 'bi-bell', label: '모집 중 · 최근 알림' });
+            drop.panel.appendChild(inner);
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        if (!window.matchMedia) return;
-        const mq = window.matchMedia(WIDE);
-        if (mq.matches) init();
-        mq.addEventListener('change', function (e) { if (e.matches) init(); });
+        buildInner();
+        const mq = window.matchMedia ? window.matchMedia(WIDE) : { matches: false, addEventListener: function () { } };
+        place(mq.matches);
+        mq.addEventListener('change', function (e) { place(e.matches); });   // 창 크기를 바꾸면 내용을 옮긴다
     });
 })();
 
@@ -384,7 +532,8 @@ window.hzMe = function () {
         btn.title = '맨 위로';
         btn.setAttribute('aria-label', '맨 위로');
         btn.innerHTML = '<span><i class="bi-arrow-up"></i></span>';
-        document.body.appendChild(btn);
+        // document.body.appendChild(btn);
+        window.hzDock('left').appendChild(btn);   // [여백 활용 ⑤-3] 왼쪽 아래 버튼 모음으로 (모드 · 메뉴 버튼 위)
 
         let ticking = false;
         function update() {

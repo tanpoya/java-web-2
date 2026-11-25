@@ -512,8 +512,9 @@ a.auth-icon { background: var(--hz-grad); }                    /* 로그인 · �
    빛이 있는 넓은 화면(1440px 이상)에서만 보인다 */
 .glow-ctrl { display: none; }
 @media (min-width: 1440px) {
-    .glow-ctrl { display: block; position: fixed; right: 16px; bottom: 16px; z-index: 1085; }
-    .toast-area { bottom: 76px; }       /* 실시간 알림(12주차)이 조절 버튼에 가리지 않게 한 칸 위로 */
+    /* .glow-ctrl { display: block; position: fixed; right: 16px; bottom: 16px; z-index: 1085; }
+       .toast-area { bottom: 76px; } */
+    .glow-ctrl { display: block; }      /* [여백 활용 ⑤-3] 위치는 오른쪽 아래 버튼 모음(.hz-dock-right)이 정한다 */
 }
 .glow-ctrl-btn {                        /* 동그란 버튼 : 왼쪽 아래 모드 버튼과 같은 모양 */
     width: 44px; height: 44px; border-radius: 50%;
@@ -594,6 +595,82 @@ a.auth-icon { background: var(--hz-grad); }                    /* 로그인 · �
 .side-nav a:hover { background: var(--hz-surface-2); }
 .side-nav a.active { background: var(--hz-btn-purple); color: var(--hz-btn-purple-text); font-weight: 700; }
 .side-nav a.admin { color: var(--hz-danger); }
+
+/* [여백 활용 ⑤-2] 이전 코드 : 버튼을 머리 부분 · 메뉴 줄 · 오른쪽 위에 넣고 아래로 펼쳤다 → ⑤-3 에서 구석 고정 버튼으로 바꿈
+.qm { position: relative; display: inline-block; vertical-align: middle; }
+.qm-inline { margin-right: 12px; }
+.qm-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; font-size: 13px; line-height: 1.6;
+    border: 1px solid var(--hz-hero-muted); border-radius: 999px;
+    background: transparent; color: var(--hz-hero-text); cursor: pointer;
+}
+.qm-btn:hover, .qm.open .qm-btn { background: var(--hz-grad); border-color: transparent; color: #fff; }
+.qm-btn i { font-size: 16px; }
+.qm-panel {
+    position: absolute; top: calc(100% + 8px); left: 0; z-index: 1090;
+    width: 230px;
+    opacity: 0; visibility: hidden;
+    transform: translateY(-8px) scaleY(.96); transform-origin: top;
+    transition: opacity .18s, transform .18s, visibility .18s;
+}
+.qm.open .qm-panel { opacity: 1; visibility: visible; transform: none; }
+.qm-panel .side-card { text-align: left; }
+.qm-fixed { position: fixed; top: 12px; right: 12px; z-index: 1090; }
+.qm-fixed .qm-btn { background: var(--hz-surface); border-color: var(--hz-border); color: var(--hz-text); box-shadow: 0 .4rem 1.2rem rgba(0, 0, 0, .15); }
+.qm-fixed .qm-panel { left: auto; right: 0; }
+.qm-nav .qm-btn { padding: 6px 14px; }
+.navbar { z-index: 30; }
+@media (max-width: 991.98px) { .qm-nav { display: none; } }
+@media (min-width: 1860px) { .qm { display: none; } }
+@media (prefers-reduced-motion: reduce) { .qm-panel { transition: none; } }
+*/
+
+/* ---------- [여백 활용 ⑤-3] 화면 구석 버튼 모음 (js/theme.js 의 hzDock) ----------
+   왼쪽 아래 : 모드(1) · 빠른 메뉴(2) · 맨 위로(3) / 오른쪽 아래 : 빛 조절(1) · 모집 중 · 알림(2)
+   column-reverse : 먼저 놓인 것(order 작은 것)이 맨 아래 */
+.hz-dock {
+    position: fixed; bottom: 16px; z-index: 1085;
+    display: flex; flex-direction: column-reverse; gap: 10px;
+}
+.hz-dock-left { left: 16px; align-items: flex-start; }
+.hz-dock-right { right: 16px; align-items: flex-end; }
+/* 원래 각자 fixed 로 떠 있던 버튼들 → 모음 안에서는 차례대로 놓이게 */
+.hz-dock .theme-toggle, .hz-dock .to-top, .hz-dock .glow-ctrl { position: relative; left: auto; right: auto; bottom: auto; }
+.hz-dock .theme-toggle { order: 1; }
+.hz-dock .qm { order: 2; }
+.hz-dock .to-top { order: 3; }
+.hz-dock .glow-ctrl { order: 1; }
+.hz-dock .qw { order: 2; }
+
+/* 동그란 버튼 + 버튼 위로 열리는 카드 (빛 조절 버튼과 같은 모양 · 같은 방향) */
+.hz-pop { position: relative; }
+.hz-pop-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 1px solid var(--hz-border); background: var(--hz-surface); color: var(--hz-text);
+    box-shadow: 0 .4rem 1.2rem rgba(0, 0, 0, .18);
+    display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer;
+}
+.hz-pop-btn:hover, .hz-pop.open .hz-pop-btn { background: var(--hz-grad); color: #fff; border-color: transparent; }
+.hz-pop-panel {
+    position: absolute; bottom: 54px; z-index: 1;
+    width: 230px;
+    max-height: calc(100vh - 220px); overflow-y: auto;      /* 카드가 길어도 화면 안에서 스크롤 */
+    opacity: 0; visibility: hidden;
+    transform: translateY(8px) scaleY(.96); transform-origin: bottom;   /* 버튼에서 위로 올라오는 느낌 */
+    transition: opacity .18s, transform .18s, visibility .18s;
+}
+.hz-dock-left .hz-pop-panel { left: 0; }
+.hz-dock-right .hz-pop-panel { right: 0; width: 240px; }
+.hz-pop.open .hz-pop-panel { opacity: 1; visibility: visible; transform: none; }
+.hz-pop-panel .side-card { text-align: left; }
+.side-widget-inner { display: flex; flex-direction: column; gap: 14px; }   /* 모집 중 · 최근 알림 카드 사이 간격 */
+@media (min-width: 1860px) { .hz-pop { display: none; } }             /* 여백이 있으면 카드가 여백에 대신 */
+@media (prefers-reduced-motion: reduce) { .hz-pop-panel { transition: none; } }
+
+/* 실시간 알림(12주차) : 오른쪽 아래 버튼 모음(최대 2개) 위로. 휴대폰은 알림이 화면 폭 전체라 왼쪽 모음(최대 3개)보다 위로 */
+.toast-area { bottom: 130px !important; }
+@media (max-width: 767.98px) { .toast-area { bottom: 180px !important; } }
 
 /* ---------- [여백 활용 ⑥] 오른쪽 위젯 : 모집 중 · 최근 알림 (js/theme.js 가 만든다) ----------
    왼쪽 빠른 메뉴와 같은 조건(1860px 이상) · 같은 카드 모양, 오른쪽 여백 가운데 */
