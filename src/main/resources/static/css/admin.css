@@ -1,0 +1,40 @@
+/* [반응형 5단계] 관리자 회원 관리 화면 (admin/members.html, admin/members-api.html) 공통
+   두 화면은 각자 <style> 을 갖고 있어서, 이 파일은 그 <style> 뒤에 연결한다 (뒤에 온 규칙이 이긴다).
+   PC 화면(768px 이상)은 바뀌지 않는다. */
+@media (max-width: 767.98px) {
+    /* 머리 부분 · 카드 여백 : 게시판(1단계)과 같게 */
+    .admin-header { padding: 20px 0 76px; }
+    .admin-header h1 { font-size: 1.5rem; letter-spacing: -1px; }
+    .admin-card { padding: 16px; }
+
+    /* 통계 카드 3개 : 세로로 길게 쌓이지 않게 한 줄에 3칸, 아이콘 위 · 숫자 아래 */
+    .stat-row > [class*="col-"] { flex: 0 0 33.3333%; max-width: 33.3333%; }
+    .stat-card { flex-direction: column; text-align: center; gap: 6px; padding: 12px 6px; }
+    .stat-icon { width: 36px; height: 36px; font-size: 18px; }
+    .stat-num { font-size: 1.5rem; }
+    .stat-label { font-size: 11px; line-height: 1.3; }
+
+    /* 회원 표 → 회원 1명 = 1칸
+       [아이디 · 나] [이름]        [권한 배지]
+       [권한 선택 ▾ ][변경]        [삭제]      */
+    .member-list thead { display: none; }
+    .member-list.table > tbody { border-top: 0; }
+    .member-list tbody tr {
+        display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px 10px;
+        padding: 12px 4px; border-bottom: 1px solid #edf0f5;
+    }
+    .member-list tbody td { display: block; padding: 0; border: 0; }
+    .member-list tbody td:nth-child(1) { display: none; }                                   /* 번호 */
+    .member-list tbody td:nth-child(2) { grid-column: 1; grid-row: 1; font-weight: 500; }   /* 아이디 */
+    .member-list tbody td:nth-child(3) { grid-column: 2; grid-row: 1; color: var(--p-color); } /* 이름 */
+    .member-list tbody td:nth-child(4) { grid-column: 3; grid-row: 1; justify-self: end; }  /* 권한 */
+    .member-list tbody td:nth-child(5) { grid-column: 1 / 3; grid-row: 2; }                 /* 권한 변경 */
+    .member-list tbody td:nth-child(6) { grid-column: 3; grid-row: 2; justify-self: end; }  /* 삭제 */
+    .member-list .role-select { flex: 1 1 auto; min-width: 0; }
+    .member-list tbody td[colspan] {                                                         /* 불러오는 중 · 결과 없음 */
+        display: block; grid-column: 1 / -1; grid-row: auto; text-align: center; padding: 16px 0;
+    }
+
+    /* API 화면의 요청 · 응답 기록 : 휴대폰에서는 덜 길게 */
+    .log-box { height: 320px; }
+}

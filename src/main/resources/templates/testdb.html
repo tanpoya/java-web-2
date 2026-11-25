@@ -2,28 +2,46 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
+    <!-- [반응형 5단계] 화면 크기 설정 추가 : 없으면 휴대폰이 980px 화면으로 그린 뒤 통째로 축소해서 글자가 아주 작아진다 -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>데이터베이스 테스트</title>
+    <!-- [반응형 5단계] 다른 화면과 같은 부트스트랩 사용 -->
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
 </head>
 
 <body>
-    <h1>User List</h1>
-    <!-- [4주차 연습문제] 변경 : 1명 출력(data4) → th:each 로 전체 목록 + 나이·성별 출력 -->
-    <!-- <p>아이디(기본키) : <span th:text="${data4.id}"></span></p> -->
-    <!-- <p>이름 : <span th:text="${data4.name}"></span></p> -->
-    <table border="1">
-        <tr>
-            <th>아이디</th>
-            <th>이름</th>
-            <th>나이</th>
-            <th>성별</th>
-        </tr>
-        <tr th:each="user : ${users}">
-            <td th:text="${user.id}"></td>
-            <td th:text="${user.name}"></td>
-            <td th:text="${user.age}"></td>
-            <td th:text="${user.gender}"></td>
-        </tr>
-    </table>
+    <!-- <h1>User List</h1> -->
+    <!-- [반응형 5단계] container : 화면 폭에 맞춘 좌우 여백 -->
+    <div class="container py-4">
+        <h1 class="h3 mb-3">User List</h1>
+        <!-- [4주차 연습문제] 변경 : 1명 출력(data4) → th:each 로 전체 목록 + 나이·성별 출력 -->
+        <!-- <p>아이디(기본키) : <span th:text="${data4.id}"></span></p> -->
+        <!-- <p>이름 : <span th:text="${data4.name}"></span></p> -->
+        <!-- <table border="1"> -->
+        <!-- [반응형 5단계] 부트스트랩 표 : 화면 너비에 맞게 늘어나고, 칸이 많아지면 표 안에서만 옆으로 스크롤 -->
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped text-center align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>아이디</th>
+                        <th>이름</th>
+                        <th>나이</th>
+                        <th>성별</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="user : ${users}">
+                        <td th:text="${user.id}"></td>
+                        <td th:text="${user.name}"></td>
+                        <td th:text="${user.age}"></td>
+                        <td th:text="${user.gender}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <a th:href="@{/}" class="btn btn-outline-secondary btn-sm">메인으로</a>
+    </div>
 </body>
 
 </html>

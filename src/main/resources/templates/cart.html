@@ -23,7 +23,9 @@
                 <a th:href="@{/board}" class="small"><i class="bi-arrow-left me-1"></i>게시판으로</a>
                 <h1 class="mt-1"><i class="bi-basket me-2"></i>신청 바구니</h1>
             </div>
-            <div class="d-flex align-items-center gap-3">
+            <!-- <div class="d-flex align-items-center gap-3"> -->
+            <!-- [반응형 3단계] flex-wrap : 좁은 화면에서 다음 줄로 내려갈 수 있게 (게시판 목록과 같게) -->
+            <div class="d-flex flex-wrap align-items-center gap-2 gap-md-3">
                 <!-- [12주차] 실시간 연결 상태 + 내 알림 종 (로그인했을 때만) -->
                 <span id="rt-status" class="rt-status">○ 실시간</span>
                 <span id="noti-bell" sec:authorize="isAuthenticated()" class="noti-bell"><i class="bi-bell"></i><span
@@ -46,7 +48,9 @@
                 <h5 class="mb-3"><i class="bi-basket me-2"></i>담은 모집글 <small class="text-muted"
                         th:text="|${#lists.size(cartPosts)}개|">0개</small></h5>
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0 board-table">
+                    <!-- <table class="table table-hover mb-0 board-table"> -->
+                    <!-- [반응형 3단계] cart-list : 휴대폰에서는 포스터 왼쪽 · 제목과 정원/남은 자리 가운데 · 빼기 오른쪽 -->
+                    <table class="table table-hover mb-0 board-table cart-list">
                         <thead>
                             <tr>
                                 <th style="width: 80px">포스터</th>
@@ -99,7 +103,9 @@
                 <h5 class="mb-3"><i class="bi-card-checklist me-2"></i>내 신청 내역 <small class="text-muted"
                         th:text="|${#lists.size(enrollments)}개|">0개</small></h5>
                 <div class="table-responsive">
-                    <table class="table mb-0 board-table">
+                    <!-- <table class="table mb-0 board-table"> -->
+                    <!-- [반응형 3단계] enroll-list : 휴대폰에서는 제목 한 줄 · 신청 인원과 시간 한 줄 · 취소 오른쪽 -->
+                    <table class="table mb-0 board-table enroll-list">
                         <thead>
                             <tr>
                                 <th>모집글</th>

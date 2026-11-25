@@ -131,6 +131,8 @@
             border-radius: var(--border-radius-small);
         }
     </style>
+    <!-- [반응형 5단계] 휴대폰 화면 규칙 : 위 <style> 보다 뒤에 연결해야 이 규칙이 적용된다 -->
+    <link th:href="@{/css/admin.css}" rel="stylesheet">
 </head>
 
 <body>
@@ -160,7 +162,9 @@
 
             <!-- 회원 통계 : ${members} = 컨트롤러가 넘겨준 회원 목록 -->
             <!-- members.?[조건] : 목록에서 조건에 맞는 것만 골라내기 (SpEL 선택 문법) -->
-            <div class="row g-3 mb-4">
+            <!-- <div class="row g-3 mb-4"> -->
+            <!-- [반응형 5단계] stat-row : 휴대폰에서 통계 카드 3개를 한 줄에 (admin.css) -->
+            <div class="row g-3 mb-4 stat-row">
                 <div class="col-md-4">
                     <div class="admin-card stat-card">
                         <div class="stat-icon" style="background: var(--primary-color);"><i class="bi-people"></i></div>
@@ -202,7 +206,9 @@
             <div class="admin-card">
                 <h5 class="mb-3"><i class="bi-list-ul me-2"></i>회원 목록</h5>
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
+                    <!-- <table class="table table-hover mb-0"> -->
+                    <!-- [반응형 5단계] member-list : 휴대폰에서는 회원 1명 = 1칸 (admin.css) -->
+                    <table class="table table-hover mb-0 member-list">
                         <thead>
                             <tr>
                                 <th>번호</th>

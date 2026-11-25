@@ -58,6 +58,23 @@
                 .navbar .custom-btn { padding: 8px 14px; }
                 .navbar-brand { font-size: 24px; }
             }
+            /* [반응형 4단계] 휴대폰 · 태블릿 메뉴 (992px 미만 = 햄버거 메뉴가 나오는 크기) */
+            @media (max-width: 991.98px) {
+                /* 메뉴를 펼치면 첫 화면 말풍선(z-index 22)이 메뉴 글자를 덮었다 → 메뉴를 그보다 위로 */
+                .navbar { z-index: 30; }
+                /* 메뉴가 길어도 화면 안에서 스크롤 */
+                .navbar-collapse { max-height: calc(100vh - 110px); overflow-y: auto; }
+                /* 메뉴 안 로그인 정보 줄 (PC 의 "admin님 + 권한 배지" 를 휴대폰 메뉴에서도) */
+                .mobile-user { border-top: 1px solid #edf0f5; margin-top: 8px; padding: 12px 0 4px; color: var(--dark-color); }
+                .mobile-user .role-badge { margin-left: 4px; }
+            }
+            /* [반응형 4단계] 회사 로고 : 테마의 max-width:100px 가 img-fluid(100%)를 덮어써서
+               320px 화면에서 로고가 칸보다 커지고 가로 스크롤이 생겼다 → 칸 너비도 넘지 않게 */
+            .clients-image { max-width: min(100px, 100%); }
+            /* [반응형 4단계] 소개 숫자(20+, 245 …) : 아주 좁은 화면(400px 이하)에서 반 칸보다 커져 가로 스크롤이 생겼다 */
+            @media (max-width: 400px) {
+                .featured-numbers { font-size: 40px; }
+            }
         </style>
 
 <!--
@@ -138,6 +155,18 @@ https://templatemo.com/tm-578-first-portfolio
                         <!-- [6주차] 관리자(ROLE_ADMIN)만 보이는 메뉴 : 메뉴를 숨겨도 주소(URL) 직접 입력은 막지 못한다! -->
                         <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                             <a class="nav-link nav-link-admin" th:href="@{/admin/members}"><i class="bi-shield-lock me-1"></i>관리자</a>
+                        </li>
+
+                        <!-- [반응형 4단계] 휴대폰 메뉴(d-lg-none) : PC 오른쪽에만 있던 로그인 정보 · 회원가입을 메뉴 안에도 -->
+                        <!-- 맨 끝에 두는 이유 : click-scroll.js 가 앞의 메뉴 5개를 순서(eq)로 찾기 때문 -->
+                        <li class="nav-item d-lg-none mobile-user" sec:authorize="isAuthenticated()">
+                            <i class="bi-person-circle me-1"></i><strong sec:authentication="name">user</strong>님
+                            <span sec:authorize="hasRole('ADMIN')" class="role-badge role-ADMIN">ADMIN</span>
+                            <span sec:authorize="hasRole('MANAGER')" class="role-badge role-MANAGER">MANAGER</span>
+                            <span sec:authorize="hasRole('USER')" class="role-badge role-USER">USER</span>
+                        </li>
+                        <li class="nav-item d-lg-none" sec:authorize="isAnonymous()">
+                            <a class="nav-link" th:href="@{/signup}"><i class="bi-person-plus me-1"></i>회원가입</a>
                         </li>
                     </ul>
 
@@ -690,5 +719,17 @@ https://templatemo.com/tm-578-first-portfolio
         <script th:src="@{/js/magnific-popup-options.js}"></script>
         <script th:src="@{/js/custom.js}"></script>
 
+        <!-- [반응형 4단계] 휴대폰 메뉴에서 항목을 누르면 메뉴를 닫는다
+             (소개 · 기술 같은 같은 페이지 이동은 메뉴가 열린 채로 화면을 가렸다) -->
+        <script>
+            document.querySelectorAll('#navbarNav .nav-link').forEach(function (link) {
+                link.addEventListener('click', function () {
+                    const menu = document.getElementById('navbarNav');
+                    if (menu.classList.contains('show')) {
+                        bootstrap.Collapse.getOrCreateInstance(menu).hide();
+                    }
+                });
+            });
+        </script>
     </body>
 </html>
