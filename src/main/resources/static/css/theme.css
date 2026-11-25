@@ -267,6 +267,140 @@ a.auth-icon { background: var(--hz-grad); }                    /* 로그인 · �
 }
 .table-bordered > :not(caption) > * > * { border-color: var(--hz-border); }
 
+/* ---------- [디자인 4단계] 메인 포트폴리오 (index.html) ----------
+   템플릿은 --white-color 를 "카드 바탕"과 "색 버튼 위 글자" 두 곳에 같이 써서 변수만 바꾸면 버튼 글자가 사라진다.
+   그래서 변수는 그대로 두고, 바탕 · 글자를 쓰는 규칙만 골라서 새 색으로 덮어쓴다. */
+
+/* 로딩 화면 · 글자 선택 색 */
+.preloader { background: var(--hz-bg); }
+::selection { background: var(--hz-purple); color: #fff; }
+
+/* 메뉴 (맨 위 투명 → 스크롤하면 떠 있는 카드) */
+.navbar-brand { color: var(--hz-hero-text); }
+.navbar-nav .nav-link { color: var(--hz-hero-muted); }
+.navbar-nav .nav-link.active, .navbar-nav .nav-link:hover { color: var(--hz-teal); }
+.navbar .nav-link.nav-link-admin { color: var(--hz-danger); }
+.navbar-user, .navbar.is-sticky .navbar-user, .is-sticky .navbar-user { color: var(--hz-text); }
+.navbar .custom-btn { border-color: var(--hz-hero-muted); color: var(--hz-hero-text); background: transparent; border-radius: 999px; }
+.navbar .custom-btn:hover { background: var(--hz-grad); border-color: transparent; color: #fff; }
+.navbar-icon { background: var(--hz-surface-2); color: var(--hz-text); }
+.navbar-toggler .navbar-toggler-icon,
+.navbar-toggler .navbar-toggler-icon::before,
+.navbar-toggler .navbar-toggler-icon::after { background: var(--hz-text); }
+.is-sticky .navbar .container {
+    background: var(--hz-surface); border: 1px solid var(--hz-border);
+    box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .15);
+}
+.is-sticky .navbar-brand { color: var(--hz-text); }
+.is-sticky .navbar-nav .nav-link { color: var(--hz-muted); }
+.is-sticky .navbar .custom-btn { border-color: var(--hz-border); color: var(--hz-text); }
+.mobile-user { color: var(--hz-text); border-top-color: var(--hz-border); }
+@media (max-width: 991.98px) {                                       /* 휴대폰 메뉴 카드 (템플릿은 흰색 고정) */
+    .navbar .container { background: var(--hz-surface); border: 1px solid var(--hz-border); }
+    .navbar-brand { color: var(--hz-text); }
+    .navbar-nav .nav-link { color: var(--hz-muted); }
+    .navbar .custom-btn { color: var(--hz-text); border-color: var(--hz-border); }
+}
+
+/* 첫 화면 : 민트 바탕 + 보라 물결 → 은은한 빛 배너 + 그라데이션 물결 */
+.hero { background: var(--hz-hero); }
+.hero svg path { fill: var(--hz-purple); opacity: .28; }          /* 물결 : HTML 의 fill="#535da1" 를 CSS 로 덮어쓴다 */
+.hero-title, .hero h2 {
+    background: var(--hz-surface); border: 1px solid var(--hz-border);
+    box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, .18);
+}
+.hero-title { color: var(--hz-text); }
+.hero h2 { color: var(--hz-teal); }
+.hero-image-wrap { background: var(--hz-grad); opacity: .9; }        /* 사람 사진 뒤 동그라미 */
+.custom-btn { background: var(--hz-grad); color: #fff; border-radius: 999px; }
+.custom-btn:hover { background: var(--hz-purple); color: #fff; }
+.custom-border-btn { border-color: var(--hz-border); color: var(--hz-text); }
+
+/* 소개 · 정보 · 숫자 */
+.section-title-wrap { background: var(--hz-grad); }
+.profile-thumb { background: var(--hz-surface); border-color: var(--hz-border); }
+.profile-title, .profile-small-title { border-color: var(--hz-border); }
+.profile-body p:nth-of-type(even) { background: var(--hz-surface-2); }
+.profile-body p span:not(.profile-small-title) { color: var(--hz-text); }
+.featured { background: var(--hz-surface-2); border-color: var(--hz-border); }
+.featured-numbers { color: var(--hz-text); }
+.featured-text { color: var(--hz-teal); }
+.featured-border-bottom, .featured-border-start { border-color: var(--hz-border); }
+
+/* 회사 로고 : 어두운 로고라 다크 모드에서는 밝게 뒤집는다 */
+:root[data-theme="dark"] .clients-image { filter: invert(1) hue-rotate(180deg) brightness(1.4); opacity: .85; }
+
+/* 기술(서비스) 카드 */
+.services { background: var(--hz-bg); border-color: var(--hz-border); }   /* 위아래 테두리가 밝은 회색 고정이라 다크에서 흰 줄로 보였다 */
+.services-thumb { background: var(--hz-surface); border: 1px solid var(--hz-border); color: var(--hz-text); }
+.services-thumb:hover { border-color: var(--hz-purple); }
+.services-icon-wrap { border-color: var(--hz-border); color: var(--hz-text); }
+.services-thumb:hover .services-icon-wrap { background: var(--hz-grad); border-color: transparent; color: #fff; }
+.services-price-wrap { background: var(--hz-purple); }
+.services-price-overlay { background: var(--hz-teal); }
+
+/* 프로젝트 · 연락처 */
+.projects-thumb { background: var(--hz-surface); border-color: var(--hz-border); }
+.projects-thumb:hover { border-color: var(--hz-purple); }
+.contact { background: var(--hz-surface-2); }
+.contact-info { background: var(--hz-surface); border: 1px solid var(--hz-border); }
+.contact-info-border-start { border-color: var(--hz-border); }
+.custom-form .form-control { background: var(--hz-surface); border-color: var(--hz-border); color: var(--hz-text); }
+.custom-form .form-control:focus { border-color: var(--hz-purple); }
+.form-floating > label { color: var(--hz-muted); }
+.form-check-input[type=checkbox] { background-color: var(--hz-surface); border-color: var(--hz-border); }
+.custom-form button[type="submit"] { background: var(--hz-grad); border: 0; border-radius: 999px; }
+
+/* 아래 정보(footer) */
+.site-footer { border-top-color: var(--hz-border); }
+.site-footer-title { color: var(--hz-text); }
+.copyright-text { border-color: var(--hz-border); }
+.footer-menu-link, .social-icon-link { border-color: var(--hz-border); color: var(--hz-text); }
+.footer-menu-link:hover, .social-icon-link:hover { background: var(--hz-grad); border-color: transparent; color: #fff; }
+
+/* ---------- [디자인 개선] 여백과 페이지의 경계선 ----------
+   넓은 모니터(1440px 이상)에서는 내용이 가운데에만 있고 양옆이 같은 색이라 "어디까지가 페이지인지" 보이지 않았다.
+   → 페이지(body)를 최대 1400px 판으로 만들고, 판 바깥(html)은 다른 색 + 판 테두리 · 그림자로 경계를 보여 준다.
+   1440px 보다 좁은 화면(노트북 · 태블릿 · 휴대폰)은 지금처럼 화면 전체를 쓴다. */
+:root, :root[data-theme="light"] { --hz-outer: #dfe2ec; }   /* 판 바깥 여백 색 */
+:root[data-theme="dark"] { --hz-outer: #07080a; }
+
+@media (min-width: 1440px) {
+    html {
+        background: var(--hz-outer);
+        /* 바깥 여백에 아주 옅은 점 무늬 : 페이지가 아니라 "바탕"이라는 느낌 */
+        background-image: radial-gradient(rgba(127, 127, 160, .14) 1px, transparent 1px);
+        background-size: 18px 18px;
+    }
+    /* body {
+        max-width: 1400px;
+        margin: 0 auto;
+        min-height: 100vh;
+        position: relative;
+        border-left: 1px solid var(--hz-border);
+        border-right: 1px solid var(--hz-border);
+        box-shadow: 0 0 60px rgba(0, 0, 0, .18);
+        overflow-x: clip;
+    } */
+
+    /* [디자인 개선] 판 모서리를 둥글게 : 위아래에도 여백(24px)을 둬야 둥근 모서리가 보인다 */
+    html {
+        overflow-x: hidden; overflow-y: auto;  /* body 의 overflow 가 창 전체(스크롤)로 옮겨 가지 않도록 html 이 직접 스크롤을 맡는다 */
+    }
+    body {
+        max-width: 1400px;
+        margin: 24px auto;                     /* 위아래 24px · 가운데 */
+        min-height: calc(100vh - 48px);        /* 내용이 짧아도 판이 화면 높이만큼 (위아래 여백 제외) */
+        position: relative;                    /* 메인 메뉴(position:absolute)가 화면 전체가 아니라 판 안에 붙도록 */
+        border: 1px solid var(--hz-border);    /* 네 변 모두 경계선 */
+        border-radius: 24px;                   /* 둥근 모서리 */
+        box-shadow: 0 0 60px rgba(0, 0, 0, .18);
+        overflow: clip;                        /* 안쪽 배너 배경 · 장식도 둥근 모서리 밖은 잘라낸다 (clip 은 스크롤을 만들지 않는다) */
+    }
+    /* 로그인 · 회원가입 · 에러 화면은 배경이 화면 높이(100vh)라, 위아래 여백 + 테두리만큼 넘쳐 스크롤이 생겼다 → 그만큼 뺀다 */
+    .auth-page { min-height: calc(100vh - 50px); }
+}
+
 /* ---------- 9. 모드 바꾸기 버튼 (js/theme.js 가 화면 왼쪽 아래에 넣는다) ---------- */
 .theme-toggle {
     position: fixed; left: 16px; bottom: 16px; z-index: 1085;
