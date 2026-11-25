@@ -228,6 +228,45 @@ code { color: var(--hz-purple); }
     font-size: 12px; padding: 3px 10px; border-radius: 999px;
 }
 
+/* ---------- [디자인 3단계] 가운데 카드 화면 : 로그인 · 회원가입 · 내 정보 · 에러 ---------- */
+.auth-page { background: var(--hz-hero); }                     /* 보라 그라데이션 전체 배경 → 은은한 빛 배너 색 */
+.auth-card {
+    background: var(--hz-surface);
+    border: 1px solid var(--hz-border);
+    border-radius: 22px;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, .18);
+    color: var(--hz-text);
+}
+.auth-card h2, .auth-card h4, .auth-card h6 { color: var(--hz-text); }
+a.auth-icon { background: var(--hz-grad); }                    /* 로그인 · 회원가입 · 내 정보 아이콘 (에러 화면 아이콘은 div 라서 원래 색 유지) */
+.auth-card .custom-btn {                                       /* 템플릿 초록 버튼 → 그라데이션 알약 */
+    background: var(--hz-grad); color: #fff; border: 0; border-radius: 999px;
+}
+.auth-card .custom-btn:hover { filter: brightness(1.08); color: #fff; }
+.auth-card .form-control { border-radius: 12px; }
+.auth-card .form-control:focus { border-color: var(--hz-purple); box-shadow: 0 0 0 .2rem rgba(123, 97, 255, .2); }
+.auth-check { accent-color: var(--hz-purple); }
+.auth-links a { color: var(--hz-purple); }
+.auth-links a:hover { color: var(--hz-teal); }
+.auth-links .btn-link { color: var(--hz-purple) !important; }  /* 내 정보 "로그아웃" (style 속성으로 색이 고정되어 있었다) */
+.info-table th { color: var(--hz-muted); }
+.info-table td { color: var(--hz-text); }
+.access-list li { border-bottom-color: var(--hz-border); }
+.access-list a { color: var(--hz-purple); }
+.text-success { color: var(--hz-teal) !important; }
+
+/* ---------- [디자인 3단계] /testdb : 부트스트랩 줄무늬 표 · 머리글 색을 모드에 맞게 ---------- */
+.table {
+    --bs-table-striped-bg: var(--hz-surface-2);
+    --bs-table-striped-color: var(--hz-text);
+}
+.table-light {
+    --bs-table-bg: var(--hz-surface-2);
+    color: var(--hz-text);
+    border-color: var(--hz-border);
+}
+.table-bordered > :not(caption) > * > * { border-color: var(--hz-border); }
+
 /* ---------- 9. 모드 바꾸기 버튼 (js/theme.js 가 화면 왼쪽 아래에 넣는다) ---------- */
 .theme-toggle {
     position: fixed; left: 16px; bottom: 16px; z-index: 1085;

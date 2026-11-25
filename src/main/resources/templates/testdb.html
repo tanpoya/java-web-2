@@ -8,13 +8,20 @@
     <title>데이터베이스 테스트</title>
     <!-- [반응형 5단계] 다른 화면과 같은 부트스트랩 사용 -->
     <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- [디자인 3단계] 아이콘 글꼴 : 모드 바꾸기 버튼의 달 · 해 아이콘 (없으면 빈 동그라미로 보인다) -->
+    <link th:href="@{/css/bootstrap-icons.css}" rel="stylesheet">
+    <!-- [디자인 3단계] 라이트 · 다크 모드 테마 + 모드 정하기 스크립트 -->
+    <link th:href="@{/css/theme.css}" rel="stylesheet">
+    <script th:src="@{/js/theme.js}"></script>
 </head>
 
 <body>
     <!-- <h1>User List</h1> -->
     <!-- [반응형 5단계] container : 화면 폭에 맞춘 좌우 여백 -->
     <div class="container py-4">
-        <h1 class="h3 mb-3">User List</h1>
+        <!-- <h1 class="h3 mb-3">User List</h1> -->
+        <!-- [디자인 3단계] hz-grad-text : 제목을 민트→보라 그라데이션 글자로 (theme.css) -->
+        <h1 class="h3 mb-3 hz-grad-text" style="width: fit-content;">User List</h1>
         <!-- [4주차 연습문제] 변경 : 1명 출력(data4) → th:each 로 전체 목록 + 나이·성별 출력 -->
         <!-- <p>아이디(기본키) : <span th:text="${data4.id}"></span></p> -->
         <!-- <p>이름 : <span th:text="${data4.name}"></span></p> -->
