@@ -542,6 +542,59 @@ a.auth-icon { background: var(--hz-grad); }                    /* 로그인 · �
 }
 .glow-ctrl-reset:hover { border-color: var(--hz-purple); }
 
+/* ---------- [여백 활용 ⑤] 왼쪽 빠른 메뉴 (js/theme.js 가 만든다) ----------
+   참고 디자인 왼쪽의 프로필 상자처럼 : 로그인 정보 + 바로가기
+   한쪽 여백 = (화면 폭 - 1400px) / 2 → 메뉴(200px) + 양옆 틈이 들어가는 1860px 이상에서만 보인다 */
+.side-menu { display: none; }
+@media (min-width: 1860px) {
+    .side-menu {
+        display: block;
+        position: fixed; z-index: 2;
+        top: 48px;
+        left: calc((100vw - 1400px) / 4);          /* 왼쪽 여백의 가운데 */
+        transform: translateX(-50%);
+        width: 200px;
+    }
+}
+.side-card {
+    background: var(--hz-surface); color: var(--hz-text);
+    border: 1px solid var(--hz-border); border-radius: 18px;
+    box-shadow: 0 .75rem 2rem rgba(0, 0, 0, .18);
+    padding: 18px 16px;
+}
+.side-profile { text-align: center; padding-bottom: 14px; margin-bottom: 10px; border-bottom: 1px solid var(--hz-border); }
+.side-avatar {                                     /* 이름 첫 글자를 넣은 그라데이션 동그라미 */
+    width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 8px;
+    background: var(--hz-grad); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700;
+}
+.side-name { font-weight: 700; font-size: 15px; }
+.side-id { font-size: 12px; color: var(--hz-muted); }
+.side-role {
+    display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 700;
+    padding: 2px 10px; border-radius: 999px; color: #fff; background: var(--hz-teal);
+}
+.side-role.ADMIN { background: var(--hz-danger); }
+.side-role.MANAGER { background: #f0a030; }
+.side-guest { font-size: 13px; color: var(--hz-muted); margin-bottom: 10px; }
+.side-btns { display: flex; gap: 6px; }
+.side-btns a {
+    flex: 1; text-align: center; font-size: 13px; padding: 6px 0; border-radius: 999px;
+    border: 1px solid var(--hz-border); color: var(--hz-text); text-decoration: none;
+}
+.side-btns a.primary { background: var(--hz-grad); color: #fff; border-color: transparent; }
+.side-nav { list-style: none; margin: 0; padding: 0; }
+.side-nav a {                                      /* 메뉴 한 줄 : 아이콘 · 이름 · 오른쪽 화살표 */
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 10px; border-radius: 10px;
+    color: var(--hz-text); text-decoration: none; font-size: 14px;
+}
+.side-nav a::after { content: "\203A"; margin-left: auto; color: var(--hz-muted); font-size: 16px; }  /* › */
+.side-nav a:hover { background: var(--hz-surface-2); }
+.side-nav a.active { background: var(--hz-btn-purple); color: var(--hz-btn-purple-text); font-weight: 700; }
+.side-nav a.admin { color: var(--hz-danger); }
+
 /* ---------- 9. 모드 바꾸기 버튼 (js/theme.js 가 화면 왼쪽 아래에 넣는다) ---------- */
 .theme-toggle {
     position: fixed; left: 16px; bottom: 16px; z-index: 1085;

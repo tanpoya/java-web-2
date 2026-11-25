@@ -128,3 +128,95 @@
         applySpeed(v);                             // ⑤ 저장된 속도 적용 (애니메이션은 화면이 만들어진 뒤에 생긴다)
     });
 })();
+
+// [여백 활용 ⑤] 왼쪽 빠른 메뉴 : 로그인 정보 + 바로가기 (참고 디자인 왼쪽의 프로필 상자처럼)
+// - 누가 로그인했는지는 7주차에 만든 GET /api/me 로 묻는다 → 화면(HTML)마다 코드를 넣지 않아도 된다
+//   200 이면 { username, name, role } , 로그인 안 했으면 401
+// - 여백이 넉넉한 넓은 화면(1860px 이상)에서만 만든다 (좁은 화면에서는 /api/me 도 부르지 않는다)
+(function () {
+    const WIDE = '(min-width: 1860px)';
+
+    // 메뉴 목록 : [주소, 아이콘, 이름, 보이는 조건]
+    const LINKS = [
+        ['/', 'bi-house', '메인', 'all'],
+        ['/board', 'bi-chat-square-text', '게시판', 'all'],
+        ['/board/my', 'bi-person-lines-fill', '내가 쓴 글', 'login'],
+        ['/cart', 'bi-basket', '신청 바구니', 'login'],
+        ['/mypage', 'bi-person-badge', '내 정보', 'login'],   // bi-person-vcard 는 로컬 아이콘 파일(예전 버전)에 없다
+        ['/admin/members', 'bi-shield-lock', '관리자', 'ADMIN']
+    ];
+
+    function isActive(href) {                       // 지금 보고 있는 화면의 메뉴에 표시
+        const p = location.pathname;
+        if (href === '/') return p === '/';
+        if (href === '/board') return p === '/board' || /^\/board\/\d+/.test(p) || p === '/board/write';
+        return p === href || p.indexOf(href + '/') === 0;
+    }
+
+    function el(tag, cls, text) {                   // 요소 만들기 : 글자는 textContent 로 (이름에 <태그>가 있어도 그대로 글자로 보이게)
+        const e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text != null) e.textContent = text;
+        return e;
+    }
+
+    function build(me) {                            // me = 로그인 정보 (없으면 null)
+        const box = el('aside', 'side-menu');
+        box.setAttribute('aria-label', '빠른 메뉴');
+        const card = el('div', 'side-card');
+        box.appendChild(card);
+
+        // ① 프로필 : 로그인했으면 이름 첫 글자 동그라미 + 이름 + 아이디 + 권한, 아니면 로그인 · 회원가입 버튼
+        const prof = el('div', 'side-profile');
+        if (me) {
+            prof.appendChild(el('div', 'side-avatar', (me.name || me.username || '?').charAt(0)));
+            prof.appendChild(el('div', 'side-name', me.name + '님'));
+            prof.appendChild(el('div', 'side-id', '@' + me.username));
+            prof.appendChild(el('span', 'side-role ' + me.role, me.role));
+        } else {
+            const av = el('div', 'side-avatar');
+            av.innerHTML = '<i class="bi-person"></i>';           // 고정된 아이콘이라 innerHTML 사용
+            prof.appendChild(av);
+            prof.appendChild(el('div', 'side-guest', '로그인하고 글쓰기 · 신청을 해 보세요'));
+            const btns = el('div', 'side-btns');
+            const a1 = el('a', 'primary', '로그인'); a1.href = '/login';
+            const a2 = el('a', null, '회원가입'); a2.href = '/signup';
+            btns.appendChild(a1); btns.appendChild(a2);
+            prof.appendChild(btns);
+        }
+        card.appendChild(prof);
+
+        // ② 바로가기 : 조건에 맞는 메뉴만 (login = 로그인한 사람, ADMIN = 관리자)
+        const ul = el('ul', 'side-nav');
+        LINKS.forEach(function (l) {
+            if (l[3] === 'login' && !me) return;
+            if (l[3] === 'ADMIN' && !(me && me.role === 'ADMIN')) return;
+            const a = el('a', (isActive(l[0]) ? 'active' : '') + (l[3] === 'ADMIN' ? ' admin' : ''));
+            a.href = l[0];
+            const i = el('i', l[1]);
+            a.appendChild(i);
+            a.appendChild(document.createTextNode(l[2]));
+            if (isActive(l[0])) a.setAttribute('aria-current', 'page');
+            const li = el('li');
+            li.appendChild(a);
+            ul.appendChild(li);
+        });
+        card.appendChild(ul);
+        document.body.appendChild(box);
+    }
+
+    function init() {
+        if (document.querySelector('.side-menu')) return;      // 한 번만
+        fetch('/api/me', { headers: { 'Accept': 'application/json' } })
+            .then(function (res) { return res.ok ? res.json() : null; })   // 401(로그인 안 함) → null
+            .catch(function () { return null; })
+            .then(build);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        if (!window.matchMedia) return;
+        const mq = window.matchMedia(WIDE);
+        if (mq.matches) init();
+        mq.addEventListener('change', function (e) { if (e.matches) init(); });   // 창을 넓히면 그때 만든다
+    });
+})();
