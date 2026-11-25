@@ -89,5 +89,16 @@ public class EnrollmentService {
         Post post = enrollment.getPost(); // 트랜잭션 안에서 꺼낸 엔티티 → JPA 가 변경을 지켜본다
         post.setAppliedCount(Math.max(post.getAppliedCount() - 1, 0)); // save() 없음 : 커밋 때 변경 감지로 UPDATE
         enrollmentRepository.delete(enrollment); // DELETE 신청 내역
+
+        // [12주차 연습문제 ①] 취소도 실시간 : cancel() 은 이미 @Transactional 이라 이벤트만 던지면 된다
+        // → 커밋이 성공하면 RealtimeNotifier 가 보낸다 (롤백되면 보내지 않는다)
+        eventPublisher.publishEvent(SeatMessage.from(post)); // 남은 자리가 다시 늘어난다 (마감 → 모집 중)
+        String writer = post.getAuthor().getUsername();
+        if (!writer.equals(username)) { // 모집글 쓴 사람에게 알림 (내 글의 신청을 내가 취소하면 생략)
+            eventPublisher.publishEvent(new Notification(writer,
+                    enrollment.getMember().getName() + "님이 '" + post.getTitle() + "' 신청을 취소했습니다. ("
+                            + post.getAppliedCount() + "/" + post.getCapacity() + ")",
+                    post.getId()));
+        }
     }
 }

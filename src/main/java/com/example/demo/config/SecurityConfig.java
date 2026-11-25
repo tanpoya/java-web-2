@@ -32,6 +32,8 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 .requestMatchers("/css/**", "/js/**", "/images/**", "/fonts/**")
                                                 .permitAll()
+                                                // [2주차 연습문제 점검] /hello(누구나)의 "두번째 헬로 페이지" 링크 → /hello2 도 누구나
+                                                .requestMatchers("/hello2").permitAll()
                                                 // .requestMatchers("/admin/**").hasRole("ADMIN") // [6주차] 관리자만
                                                 .requestMatchers("/admin/**",
                                                                 "/api/admin/**")

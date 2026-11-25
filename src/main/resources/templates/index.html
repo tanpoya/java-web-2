@@ -20,6 +20,8 @@
         <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
 
         <link th:href="@{/css/bootstrap-icons.css}" rel="stylesheet">
+        <!-- [3주차 연습문제] 로컬 bootstrap-icons.css 는 예전 버전이라 bi-anthropic 이 없다 → 최신 아이콘 CDN 추가 -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
 
         <link th:href="@{/css/magnific-popup.css}" rel="stylesheet" media="print" onload="this.media='all'">
         <noscript><link th:href="@{/css/magnific-popup.css}" rel="stylesheet"></noscript>
@@ -378,7 +380,9 @@ https://templatemo.com/tm-578-first-portfolio
 
                                         <p>You can explore more CSS templates on TemplateMo website by browsing through different tags.</p>
 
-                                        <a href="#" class="custom-btn custom-border-btn btn mt-3">Discover More</a>
+                                        <!-- <a href="#" class="custom-btn custom-border-btn btn mt-3">Discover More</a> -->
+                                        <!-- [3주차 연습문제] 비어 있던 링크(#)를 상세 페이지로 연결 -->
+                                        <a href="/detailed_ai.html" target="_blank" rel="noopener noreferrer" class="custom-btn custom-border-btn btn mt-3">Discover More</a>
 
                                         <div class="services-icon-wrap d-flex justify-content-center align-items-center">
                                             <i class="services-icon bi-anthropic"></i>
@@ -399,10 +403,14 @@ https://templatemo.com/tm-578-first-portfolio
 
                                         <p>If you need a customized ecommerce website for your business, feel free to discuss with me.</p>
 
-                                        <a href="#" class="custom-btn custom-border-btn btn mt-3">Discover More</a>
+                                        <!-- <a href="#" class="custom-btn custom-border-btn btn mt-3">Discover More</a> -->
+                                        <!-- [3주차 연습문제] 비어 있던 링크(#)를 상세 페이지로 연결 -->
+                                        <a href="/detailed_security.html" target="_blank" rel="noopener noreferrer" class="custom-btn custom-border-btn btn mt-3">Discover More</a>
 
                                         <div class="services-icon-wrap d-flex justify-content-center align-items-center">
-                                            <i class="services-icon bi-phone"></i>
+                                            <!-- [3주차 연습문제] 변경 : 아이콘 bi-phone → bi-shield-lock (보안) -->
+                                            <!-- <i class="services-icon bi-phone"></i> -->
+                                            <i class="services-icon bi-shield-lock"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -420,10 +428,14 @@ https://templatemo.com/tm-578-first-portfolio
 
                                         <p>To list your website first on any search engine, we will work together. First Portfolio is one-page CSS Template for free download.</p>
 
-                                        <a href="#" class="custom-btn custom-border-btn btn mt-3">Discover More</a>
+                                        <!-- <a href="#" class="custom-btn custom-border-btn btn mt-3">Discover More</a> -->
+                                        <!-- [3주차 연습문제] 비어 있던 링크(#)를 상세 페이지로 연결 -->
+                                        <a href="/detailed_game.html" target="_blank" rel="noopener noreferrer" class="custom-btn custom-border-btn btn mt-3">Discover More</a>
 
                                         <div class="services-icon-wrap d-flex justify-content-center align-items-center">
-                                            <i class="services-icon bi-google"></i>
+                                            <!-- [3주차 연습문제] 변경 : 아이콘 bi-google → bi-controller (게임) -->
+                                            <!-- <i class="services-icon bi-google"></i> -->
+                                            <i class="services-icon bi-controller"></i>
                                         </div>
                                     </div>
                                 </div>

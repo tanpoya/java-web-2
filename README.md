@@ -527,3 +527,80 @@ public void cancel(Long enrollmentId, String username) {
 - 합친 뒤 사본 4개는 삭제했다. (이전 내용은 git 기록에 남아 있다)
 
 **결과** : `POST /cart/enrollments/{id}/cancel`을 처리하는 코드가 들어와서 "수강취소 오류"가 해결된다. 10주차 댓글 넘침 CSS, 11주차 삭제 정리도 그대로 유지된다.
+
+---
+
+## 연습문제 다시 점검 (2026-11-25)
+
+### 2주차 - `/hello2` 로그인 없이 열기
+
+**문제** : 5주차 보안 설정에서 `/hello`만 `permitAll()`이라, 누구나 보는 `/hello`의 "두번째 헬로 페이지" 링크를 누르면 로그인 화면으로 이동했다.
+
+**바꾼 곳** : `SecurityConfig`의 정적 리소스 줄 아래에 `.requestMatchers("/hello2").permitAll()` 추가
+
+### 3주차 - 사라진 포트폴리오 수정 복구
+
+**문제** : 9주차 제공 `index.html`로 덮어쓰면서(커밋 `71987c2`) 3주차에 고친 부분이 원래 템플릿으로 돌아가 있었다.
+- AI · 보안 · 게임의 "Discover More" 링크가 다시 `href="#"`
+- 보안 아이콘 `bi-phone`, 게임 아이콘 `bi-google`
+- 최신 아이콘 CDN 링크가 없어 AI 아이콘(`bi-anthropic`)이 보이지 않음
+
+**바꾼 곳** : `templates/index.html` (기존 줄은 주석으로 남김)
+- `<head>`에 `bootstrap-icons@1.13.1` CDN 링크 다시 추가
+- "Discover More" 3개를 `/detailed_ai.html`, `/detailed_security.html`, `/detailed_game.html`로 연결 (`target="_blank" rel="noopener noreferrer"`)
+- 아이콘 `bi-phone` → `bi-shield-lock`, `bi-google` → `bi-controller`
+
+**결과 확인** : 로그인 없이 `/`, `/hello2`, 상세 페이지 4개 모두 200. CDN에 `bi-anthropic`, `bi-shield-lock`, `bi-controller`가 들어 있는 것도 확인했다.
+
+### 4 ~ 11주차 - 점검 결과 (코드 변경 없음)
+
+- 4주차 `/testdb` 표 출력, 5주차 로그인 상태 유지 · 비밀번호 확인, 6주차 MANAGER 권한 · 본인 보호, 7주차 회원 검색 API · 오류 처리, 9주차 조회수 · 내가 쓴 글, 10주차 페이징 · 작성자 검색, 11주차 신청 취소 · 삭제 막기를 서버를 띄워 직접 확인했다. 모두 정상이고 서버 로그 ERROR 0건.
+- 참고 : README 4주차에 적힌 `testdb_update.sql` 파일은 저장소에 없다 (데이터는 DB에 이미 있음).
+
+---
+
+## 12주차 연습문제 - 신청 취소도 실시간 & 댓글 알림
+
+### 연습 ① 취소 실시간
+
+**문제** : 11주차 연습문제로 만든 신청 취소는 DB만 바꾸고 실시간 메시지를 보내지 않았다. 다른 사람이 열어 둔 화면의 남은 자리가 그대로였고, 모집글 쓴 사람도 취소 사실을 알 수 없었다.
+
+**바꾼 곳** : `model/service/EnrollmentService.java`의 `cancel()` 끝부분 (기존 코드는 그대로, 아래에 추가)
+
+```java
+eventPublisher.publishEvent(SeatMessage.from(post)); // 남은 자리가 다시 늘어난다
+String writer = post.getAuthor().getUsername();
+if (!writer.equals(username)) { // 내 글의 신청을 내가 취소하면 생략
+    eventPublisher.publishEvent(new Notification(writer,
+            enrollment.getMember().getName() + "님이 '" + post.getTitle() + "' 신청을 취소했습니다. (" ... ")",
+            post.getId()));
+}
+```
+
+**하는 일**
+- `cancel()`은 11주차에 이미 `@Transactional`이라 이벤트만 던지면 된다. 커밋이 성공하면 `RealtimeNotifier`가 보낸다 (실패해서 롤백되면 보내지 않는다).
+- `SeatMessage` → `/topic/seats` : 목록 · 상세 · 바구니 화면의 남은 자리와 배지가 바로 바뀐다 (마감 → 모집 중).
+- `Notification` → 모집글 쓴 사람에게만 "OO님이 '…' 신청을 취소했습니다." 알림
+
+### 연습 ② 댓글 알림
+
+**문제** : 내 글에 댓글이 달려도 알 수 없었다. 이벤트만 던지면 알림이 오지 않는다. 10주차 `CommentService.write()`에 `@Transactional`이 없어서, 트랜잭션이 끝나야 실행되는 `@TransactionalEventListener`가 움직이지 않기 때문이다.
+
+**바꾼 곳** : `model/service/CommentService.java` (기존 `write()`는 주석으로 남김)
+- `ApplicationEventPublisher eventPublisher` 필드와 import 3줄(`Notification`, `ApplicationEventPublisher`, `Transactional`) 추가
+- `write()`에 `@Transactional` 추가
+- 저장한 뒤 글쓴이가 댓글 쓴 사람과 다르면 `Notification` 이벤트 발행 : "OO님이 '…' 에 댓글을 남겼습니다."
+- 내 글에 내 댓글은 알림 없음
+
+화면(`realtime.js`, `detail.html`, `list.html`, `cart.html`)은 12주차 수업 코드가 이미 `SeatMessage` · `Notification`을 처리하므로 고치지 않았다.
+
+### 결과 확인
+
+admin 세션으로 `/topic/seats`, `/user/queue/notifications`를 구독하고, 임시 회원(김학생)과 임시 모집글(정원 1)로 확인했다. 확인한 뒤 임시 회원과 임시 모집글은 삭제했다.
+
+| # | 하는 일 | 결과 |
+| --- | --- | --- |
+| 1 | 김학생이 신청 확정 | 남은 자리 0 (마감) + admin에게 신청 알림 |
+| 2 | 김학생이 신청 취소 | `{"appliedCount":0,"remaining":1}` 전송, 상세 화면 마감 → 모집 중, admin에게 "김학생님이 '…' 신청을 취소했습니다. (0/1)" |
+| 3 | 김학생이 admin의 글에 댓글 | admin에게 "김학생님이 '…' 에 댓글을 남겼습니다." |
+| 4 | admin이 자기 글에 댓글 | 알림 없음 |
