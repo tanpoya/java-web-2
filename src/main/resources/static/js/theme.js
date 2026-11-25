@@ -46,3 +46,85 @@
         });
     }
 })();
+
+// [여백 꾸미기 ⑤] 오른쪽 아래 : 배경 빛의 세기 · 속도 조절
+// - 세기 : CSS 변수 --hz-glow-strength 를 바꾼다 (theme.css 의 빛 색 투명도에 곱해진다)
+// - 속도 : 빛 애니메이션(hz-drift-a, hz-drift-b)의 재생 속도(playbackRate)를 바꾼다
+//          → 애니메이션 시간(duration)을 바꾸면 빛이 다른 위치로 "툭" 튀지만, 재생 속도는 지금 자리에서 빨라지거나 느려진다
+// - 고른 값은 localStorage 에 기억해서 다른 화면 · 다음 접속에도 그대로
+(function () {
+    const KEY_S = 'glowStrength', KEY_V = 'glowSpeed';
+    const DEF_S = 100, DEF_V = 1;                  // 기본값 : 세기 100%, 속도 1배
+    const root = document.documentElement;
+
+    function load(key, def) {
+        try { const v = parseFloat(localStorage.getItem(key)); return isNaN(v) ? def : v; } catch (e) { return def; }
+    }
+    function store(key, v) {
+        try { localStorage.setItem(key, v); } catch (e) { /* 저장이 막혀도 이번 화면에서는 적용된다 */ }
+    }
+    function applyStrength(pct) {                  // 100% → 1, 0% → 0, 300% → 3
+        root.style.setProperty('--hz-glow-strength', pct / 100);
+    }
+    function glowAnimations() {                    // 빛 애니메이션 2개만 골라낸다 (다른 애니메이션은 건드리지 않게)
+        return document.getAnimations ? document.getAnimations().filter(function (a) {
+            return a.animationName && a.animationName.indexOf('hz-drift') === 0;
+        }) : [];
+    }
+    function applySpeed(rate) {                    // 0 = 멈춤
+        glowAnimations().forEach(function (a) {
+            if (a.updatePlaybackRate) a.updatePlaybackRate(rate); else a.playbackRate = rate;
+        });
+    }
+
+    applyStrength(load(KEY_S, DEF_S));             // ① 세기는 화면이 그려지기 전에 바로 (빛이 번쩍 바뀌지 않게)
+
+    document.addEventListener('DOMContentLoaded', function () {
+        let s = load(KEY_S, DEF_S), v = load(KEY_V, DEF_V);
+        const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // ② 조절 상자 만들기 : 동그란 버튼 + 버튼을 누르면 열리는 작은 카드
+        const box = document.createElement('div');
+        box.className = 'glow-ctrl';
+        box.innerHTML =
+            '<div class="glow-ctrl-panel" id="glow-ctrl-panel" hidden>' +
+            '  <div class="glow-ctrl-title"><i class="bi-stars me-1"></i>배경 빛</div>' +
+            '  <label class="glow-ctrl-row">세기 <span id="glow-s-val"></span>' +
+            '    <input type="range" id="glow-s" min="0" max="300" step="10"></label>' +
+            '  <label class="glow-ctrl-row">속도 <span id="glow-v-val"></span>' +
+            '    <input type="range" id="glow-v" min="0" max="4" step="0.25"></label>' +
+            (reduced ? '  <p class="glow-ctrl-note">"동작 줄이기" 설정이 켜져 있어 빛이 움직이지 않습니다.</p>' : '') +
+            '  <button type="button" class="glow-ctrl-reset" id="glow-reset"><i class="bi-arrow-counterclockwise me-1"></i>기본값</button>' +
+            '</div>' +
+            '<button type="button" class="glow-ctrl-btn" id="glow-ctrl-btn" aria-expanded="false" aria-controls="glow-ctrl-panel"' +
+            ' title="배경 빛 세기 · 속도 조절" aria-label="배경 빛 세기 · 속도 조절"><i class="bi-sliders"></i></button>';
+        document.body.appendChild(box);
+
+        const panel = box.querySelector('#glow-ctrl-panel');
+        const btn = box.querySelector('#glow-ctrl-btn');
+        const sIn = box.querySelector('#glow-s'), vIn = box.querySelector('#glow-v');
+        const sVal = box.querySelector('#glow-s-val'), vVal = box.querySelector('#glow-v-val');
+
+        function show() {                          // 입력 상자 · 숫자 표시를 현재 값으로
+            sIn.value = s; vIn.value = v;
+            sVal.textContent = s + '%';
+            vVal.textContent = v === 0 ? '멈춤' : v + '배';
+        }
+
+        // ③ 슬라이더를 움직이는 동안 바로 적용 (input 이벤트) + 기억
+        sIn.addEventListener('input', function () { s = Number(sIn.value); applyStrength(s); store(KEY_S, s); show(); });
+        vIn.addEventListener('input', function () { v = Number(vIn.value); applySpeed(v); store(KEY_V, v); show(); });
+        box.querySelector('#glow-reset').addEventListener('click', function () {
+            s = DEF_S; v = DEF_V; applyStrength(s); applySpeed(v); store(KEY_S, s); store(KEY_V, v); show();
+        });
+
+        // ④ 버튼으로 열고 닫기, 바깥을 누르거나 Esc 를 누르면 닫기
+        function setOpen(open) { panel.hidden = !open; btn.setAttribute('aria-expanded', String(open)); }
+        btn.addEventListener('click', function (e) { e.stopPropagation(); setOpen(panel.hidden); });
+        document.addEventListener('click', function (e) { if (!box.contains(e.target)) setOpen(false); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+
+        show();
+        applySpeed(v);                             // ⑤ 저장된 속도 적용 (애니메이션은 화면이 만들어진 뒤에 생긴다)
+    });
+})();
