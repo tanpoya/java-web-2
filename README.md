@@ -1,133 +1,143 @@
 # 자바웹프로그래밍(2) - 포트폴리오 프로젝트
 
-Spring Boot 4.1 · Java 25 · Thymeleaf · Spring Data JPA · MySQL · Spring Security
+Spring Boot 4.1 · Java 25 · Thymeleaf · Spring Data JPA · MySQL · Spring Security · WebSocket(STOMP)
 
-## 진행 현황
+## 핵심 요약
 
-- 2주차 : 스프링 부트 개발환경, URL 매핑과 컨트롤러 완료
-- 3주차 : 포트폴리오(부트스트랩 5) 화면 및 기술 상세 페이지 완료
-- 4주차 : MySQL 데이터베이스 연동(JPA) 완료
-- 5주차 : 로그인/로그아웃, 비밀번호 암호화(BCrypt) 완료
-- 6주차 : 권한(ROLE) 접근 제어, 관리자 페이지 분리 완료
-- 7주차 : 회원 관리 REST API(JSON) 완료
+| 주차 | 주제 | 연습문제 / 개선 | 핵심 구현 |
+| ---- | ---- | --------------- | --------- |
+| [2주차](#2주차---url-매핑과-컨트롤러) | URL 매핑 · 컨트롤러 | `/hello2`에 값 5개 출력 | `Model`로 `data1`~`data5` 전달, `/hello2` 누구나 접근 |
+| [3주차](#3주차---포트폴리오-수정) | 포트폴리오 화면 | 아이콘 수정 · 상세 페이지 3개 | `detailed_ai/security/game.html`, 아이콘 CDN |
+| [4주차](#4주차---사용자-정보-출력) | DB 연동(JPA) | 나이·성별 추가, 표로 출력 | `TestDB` 필드 추가, `th:each` |
+| [5주차](#5주차---로그인-기능-개선) | 로그인 · 암호화 | 로그인 상태 유지, 비밀번호 확인 | `rememberMe()` 7일, `signup()` 검증 |
+| [6주차](#6주차---권한-관리-개선) | 권한(ROLE) | 관리자 본인 보호, MANAGER 권한 | `checkNotSelf()`, `hasAnyRole()` |
+| [7주차](#7주차---rest-api-개선) | REST API | 회원 검색, 오류 처리 모으기 | `?keyword=`, `@RestControllerAdvice` |
+| [9주차](#9주차---게시판-crud) | 게시판 CRUD | 조회수, 내가 쓴 글 (+ 사용성 개선 2개) | `read()`, `/board/my`, `pageshow` |
+| [10주차](#10주차---페이징--검색--댓글) | 페이징 · 검색 · 댓글 | 내가 쓴 글 페이징, 작성자 검색 (+ 댓글 넘침 수정) | `Pageable`, JPQL `searchByWriter()`, `overflow-wrap` |
+| [11주차](#11주차---신청-바구니와-트랜잭션) | 파일 업로드 · 트랜잭션 | 신청 취소, 삭제 정리 | `@Transactional` + 변경 감지, `exists...()` 검사 |
+| [12주차](#12주차---websocket-실시간-알림) | WebSocket 실시간 알림 | 취소 실시간, 댓글 알림 | 이벤트 발행, `write()`에 `@Transactional` |
 
-아래는 각 주차의 **연습문제를 어떻게 해결했는지** 정리한 내용입니다.
-기존 코드는 지우지 않고, 바꿔야 하는 부분은 주석으로 남긴 뒤 `[N주차 연습문제]` 표시를 붙여 새 코드를 추가했습니다.
+- **상태** : 2 ~ 12주차 연습문제 모두 완료. 2026-11-25에 서버를 띄워 주차별로 다시 확인했다 (서버 로그 ERROR 0건).
+- **작업 규칙** : 기존 코드는 지우지 않고 주석으로 남긴 뒤, 새 코드에 `[N주차 연습문제]` 표시를 붙였다.
+- **주의** : DB 비밀번호는 `application-secret.properties`에만 두고 GitHub에 올리지 않는다.
+- 막혔던 문제와 해결 방법은 맨 아래 [문제 해결 기록](#문제-해결-기록)에 모았다.
 
 ---
 
-## 2주차 - URL 매핑과 컨트롤러 추가하기
+## 2주차 - URL 매핑과 컨트롤러
 
 **문제** : `/hello2` 페이지를 만들고 컨트롤러에서 5개의 값을 넘겨 화면에 출력한다.
 
-**해결 방법**
+**해결**
 
-- `DemoController`의 `hello2()` 메서드에서 `model.addAttribute()`로 `data1` ~ `data5` 다섯 개의 값을 담았다.
-- `hello2.html`에서 `th:text="${data1}"` 형태로 다섯 값을 출력했다.
+- `DemoController.hello2()`에서 `model.addAttribute()`로 `data1` ~ `data5`를 담았다.
+- `hello2.html`에서 `th:text="${data1}"` 형태로 출력했다.
 - `hello.html`의 링크 이름을 "두번째 헬로 페이지"로 바꾸고 주소는 `/hello2`로 통일했다.
 
 **이유**
 
-- 화면(HTML)에 직접 글자를 쓰지 않고 **컨트롤러 → Model → 뷰** 순서로 데이터를 넘겨야 나중에 DB 값으로 바꾸기 쉽다.
-- 링크를 `/hello2.html`이 아니라 `/hello2`로 쓴 이유는 templates 폴더의 파일은 직접 열 수 없고, 반드시 컨트롤러의 URL 매핑을 거쳐야 하기 때문이다. (2주차 404 오류의 원인)
+- 화면에 글자를 직접 쓰지 않고 **컨트롤러 → Model → 뷰** 순서로 넘겨야 나중에 DB 값으로 바꾸기 쉽다.
+- `/hello2.html`이 아니라 `/hello2`로 쓴 이유 : templates 폴더의 파일은 직접 열 수 없고 컨트롤러의 URL 매핑을 거쳐야 한다. (2주차 404 오류의 원인)
+
+**추가 수정 (11-25)** : 5주차 보안 설정 이후 `/hello2`가 잠겨 있어서, 누구나 보는 `/hello`의 링크를 누르면 로그인 화면으로 이동했다. → `SecurityConfig`에 `.requestMatchers("/hello2").permitAll()` 추가
 
 ---
 
-## 3주차 - 포트폴리오 수정하기
+## 3주차 - 포트폴리오 수정
 
 **문제** : 기술(Services) 영역 4가지의 아이콘을 수정하고, 웹을 제외한 나머지 기술의 상세 페이지를 만든다.
 
-**해결 방법**
+**해결**
 
-- `detailed_web.html`의 디자인을 그대로 재활용해서 `detailed_ai.html`, `detailed_security.html`, `detailed_game.html`을 `resources/public` 폴더에 만들었다. 각 페이지의 제목, 소개글, 기술 스택, 숙련도, 진행 방식만 분야에 맞게 바꿨다.
+- `detailed_web.html`의 디자인을 재활용해 `detailed_ai.html`, `detailed_security.html`, `detailed_game.html`을 `resources/public`에 만들었다. 제목, 소개글, 기술 스택, 숙련도, 진행 방식만 분야에 맞게 바꿨다.
 - `index.html`의 비어 있던 `Discover More` 링크(`href="#"`)를 각 상세 페이지로 연결했다.
-- 분야와 맞지 않던 아이콘을 바꿨다. 보안 `bi-phone` → `bi-shield-lock`, 게임 `bi-google` → `bi-controller`
-- AI 아이콘(`bi-anthropic`)이 화면에 나오지 않는 문제가 있었다. 프로젝트에 들어 있는 `bootstrap-icons.css`가 예전 버전이라 이 아이콘이 없었기 때문이다. 최신 아이콘 CDN 링크를 추가해서 해결했다.
-- `SecurityConfig`에 세 상세 페이지를 `permitAll()`로 추가했다. (5주차부터는 허용하지 않은 주소가 모두 잠기므로 필요)
+- 아이콘 변경 : 보안 `bi-phone` → `bi-shield-lock`, 게임 `bi-google` → `bi-controller`
+- AI 아이콘(`bi-anthropic`)이 안 보이던 문제 : 프로젝트의 `bootstrap-icons.css`가 예전 버전이었다. → 최신 아이콘 CDN 링크 추가
+- `SecurityConfig`에 상세 페이지 3개를 `permitAll()`로 추가했다. (5주차부터 허용하지 않은 주소는 모두 잠김)
 
 **이유**
 
-- 상세 페이지는 데이터 없이 보여주기만 하는 소개 페이지이므로, 컨트롤러 없이 바로 열리는 `public` 폴더에 두는 것이 간단하다.
-- 새 탭으로 여는 링크에는 `rel="noopener noreferrer"`를 붙여, 새로 열린 페이지가 원래 페이지를 조작하지 못하게 했다.
+- 상세 페이지는 데이터 없는 소개 페이지라서, 컨트롤러 없이 바로 열리는 `public` 폴더가 간단하다.
+- 새 탭 링크에 `rel="noopener noreferrer"`를 붙여, 새로 열린 페이지가 원래 페이지를 조작하지 못하게 했다.
+
+**추가 수정 (11-25)** : 9주차 제공 `index.html`로 덮어쓰면서(커밋 `71987c2`) 위 수정이 원래 템플릿으로 돌아가 있었다. → 아이콘 CDN, Discover More 링크 3개, 아이콘 2개를 다시 적용했다. (기존 줄은 주석으로 남김)
 
 ---
 
-## 4주차 - 사용자 정보 수정 및 출력하기
+## 4주차 - 사용자 정보 출력
 
 **문제** : TestDB 엔티티에 나이·성별 컬럼을 추가하고, 여러 사용자를 표로 출력한다.
 
-**해결 방법**
+**해결**
 
 - `TestDB` 엔티티에 `Integer age`, `String gender` 필드를 추가했다.
-- `TestService`에 `findAll()`을 추가하고, `DemoController`에서 `users`라는 이름으로 전체 목록을 화면에 넘겼다.
-- `testdb.html`은 1명만 출력하던 코드를 주석 처리하고, `th:each="user : ${users}"`로 표의 행을 반복 출력했다.
-- 데이터는 `testdb_update.sql`의 INSERT 문으로 넣는다.
+- `TestService.findAll()`을 추가하고, `DemoController`에서 `users`로 전체 목록을 넘겼다.
+- `testdb.html`은 1명만 출력하던 코드를 주석 처리하고, `th:each="user : ${users}"`로 표의 행을 반복했다.
 
 **이유**
 
-- `application.properties`의 `spring.jpa.hibernate.ddl-auto=update` 설정 덕분에 엔티티에 필드만 추가하면 서버 재시작 시 테이블에 컬럼이 자동으로 생긴다. SQL로 테이블을 직접 고치지 않아도 된다.
-- 나이를 `int`가 아닌 `Integer`로 쓴 이유 : 기존에 저장된 행은 나이 값이 비어 있다(null). 기본형 `int`는 null을 담을 수 없어서 오류가 나기 때문이다.
-- `findAll()`은 JpaRepository가 기본으로 제공하므로 SQL을 직접 쓰지 않아도 된다.
+- `spring.jpa.hibernate.ddl-auto=update` 덕분에 엔티티에 필드만 추가하면 재시작할 때 컬럼이 자동으로 생긴다.
+- 나이를 `int`가 아닌 `Integer`로 쓴 이유 : 기존 행은 나이가 비어 있다(null). `int`는 null을 담을 수 없어 오류가 난다.
+- `findAll()`은 JpaRepository가 기본으로 제공한다.
+
+> 참고 : 처음에는 데이터를 `testdb_update.sql`로 넣는다고 적었지만, 이 파일은 저장소에 없다. 데이터는 DB에 이미 들어 있다.
 
 ---
 
-## 5주차 - 로그인 기능 개선하기
+## 5주차 - 로그인 기능 개선
 
 ### ① 로그인 상태 유지 (remember-me)
 
-**해결 방법**
+**해결** : `SecurityConfig`의 로그아웃 설정 뒤에 `.rememberMe()` 추가
 
-- `SecurityConfig`의 로그아웃 설정 뒤에 `.rememberMe()`를 추가했다.
-- `key("비밀키")`로 쿠키 위조를 막고, `tokenValiditySeconds(60 * 60 * 24 * 7)`로 7일 동안 유지되게 했다.
+- `key("비밀키")` : 쿠키 위조 방지
+- `tokenValiditySeconds(60 * 60 * 24 * 7)` : 7일 유지
 
 **이유**
 
-- 일반 로그인은 세션 쿠키(JSESSIONID)를 쓰기 때문에 브라우저를 닫으면 로그인이 풀린다. remember-me는 별도의 쿠키를 남겨서 다시 접속해도 자동으로 로그인된다.
-- `login.html`의 체크박스 이름이 `remember-me`라서 시큐리티가 자동으로 인식한다.
-- 로그아웃할 때는 기존 설정의 `deleteCookies("JSESSIONID", "remember-me")`가 이 쿠키도 함께 지운다.
+- 일반 로그인은 세션 쿠키(JSESSIONID)라서 브라우저를 닫으면 풀린다. remember-me는 별도 쿠키를 남겨 다시 접속해도 자동 로그인된다.
+- `login.html` 체크박스 이름이 `remember-me`라서 시큐리티가 자동으로 인식한다.
+- 로그아웃할 때는 `deleteCookies("JSESSIONID", "remember-me")`가 이 쿠키도 지운다.
 
 ### ② 비밀번호 확인 검증
 
-**해결 방법**
-
-- `MemberService.signup()`에서 `password`와 `passwordConfirm`이 다르면 `IllegalArgumentException("비밀번호가 일치하지 않습니다.")`을 던지게 했다.
-- 컨트롤러는 이미 이 예외를 잡아 가입 화면에 오류 메시지를 보여주도록 되어 있어서, 서비스만 고치면 됐다.
+**해결** : `MemberService.signup()`에서 `password`와 `passwordConfirm`이 다르면 `IllegalArgumentException("비밀번호가 일치하지 않습니다.")`. 컨트롤러는 이미 이 예외를 가입 화면 메시지로 보여 준다.
 
 **이유**
 
-- 검사를 화면(HTML)이 아닌 **서비스**에 둔 이유 : 화면 검사는 개발자 도구로 쉽게 우회할 수 있다. 또 7주차의 회원 등록 API(Postman)도 같은 `signup()`을 쓰므로, 한 곳에서 검사하면 화면과 API 모두 막힌다.
-- 예외가 발생하면 `save()` 전에 멈추므로 DB에 저장되지 않는다.
+- 검사를 화면이 아닌 **서비스**에 둔 이유 : 화면 검사는 개발자 도구로 우회할 수 있다. 7주차 회원 등록 API도 같은 `signup()`을 쓰므로 한 곳에서 화면과 API를 모두 막는다.
+- 예외가 `save()` 전에 나므로 DB에 저장되지 않는다.
 
 ---
 
-## 6주차 - 권한 관리 개선하기
+## 6주차 - 권한 관리 개선
 
 ### ① 관리자 본인 보호
 
-**해결 방법**
+**해결**
 
-- `MemberService`에 `checkNotSelf()` 메서드를 만들었다. `SecurityContextHolder`로 현재 로그인한 아이디를 꺼내서, 변경·삭제 대상과 같으면 예외를 던진다.
-- `changeRole()`, `deleteMember()`에서 이 메서드를 호출한다. 메시지 : "자기 자신의 권한 변경·삭제는 할 수 없습니다."
+- `MemberService.checkNotSelf()` : `SecurityContextHolder`로 로그인 아이디를 꺼내, 변경·삭제 대상과 같으면 예외
+- `changeRole()`, `deleteMember()`에서 호출 → "자기 자신의 권한 변경·삭제는 할 수 없습니다."
 
 **이유**
 
-- 관리자가 실수로 자기 자신을 USER로 바꾸거나 삭제하면 관리자가 0명이 되어 아무도 회원 관리를 할 수 없게 된다.
-- `SecurityContextHolder`를 쓴 이유 : 컨트롤러는 `Principal`을 파라미터로 받을 수 있지만, 서비스에서는 그럴 수 없다. `SecurityContextHolder`는 어디서든 로그인 사용자를 꺼낼 수 있다.
-- 검사를 서비스에 두었기 때문에 관리자 화면(6주차)과 REST API(7주차) 모두 같은 규칙이 적용된다.
+- 관리자가 실수로 자기 권한을 바꾸거나 삭제하면 관리자가 0명이 될 수 있다.
+- 컨트롤러는 `Principal`을 받을 수 있지만 서비스는 그럴 수 없어서 `SecurityContextHolder`를 썼다.
+- 서비스에서 검사하므로 관리자 화면(6주차)과 REST API(7주차)에 같은 규칙이 적용된다.
 
 ### ② 매니저(MANAGER) 권한 추가
 
-**해결 방법**
+**해결**
 
-- 허용 권한 목록(화이트리스트) `ROLES`에 `"MANAGER"`를 추가했다. (기존 줄은 주석으로 남김)
-- `SecurityConfig`에 `.requestMatchers("/testdb").hasAnyRole("ADMIN", "MANAGER")`를 추가해서 USER는 회원목록에 들어가면 403이 나온다.
-- (추가 도전) `index.html`의 회원목록 메뉴에 `sec:authorize="hasAnyRole('ADMIN', 'MANAGER')"`를 붙여 USER에게는 메뉴가 보이지 않게 했다.
+- 허용 권한 목록 `ROLES`에 `"MANAGER"` 추가 (기존 줄은 주석)
+- `SecurityConfig` : `.requestMatchers("/testdb").hasAnyRole("ADMIN", "MANAGER")`
+- (추가 도전) `index.html` 회원목록 메뉴에 `sec:authorize="hasAnyRole('ADMIN', 'MANAGER')"`
 
 **이유**
 
-- `hasRole()`은 권한 하나만 검사하고, `hasAnyRole()`은 여러 권한 중 하나만 있으면 통과한다.
-- URL 규칙은 위에서부터 순서대로 검사하므로 `anyRequest()`보다 **위에** 추가했다.
-- 메뉴 숨기기(화면)만으로는 주소를 직접 입력하는 것을 막을 수 없다. 그래서 URL 규칙(1차 잠금)도 함께 추가했다.
+- `hasRole()`은 권한 하나, `hasAnyRole()`은 여러 권한 중 하나만 있으면 통과한다.
+- URL 규칙은 위에서부터 검사하므로 `anyRequest()`보다 **위에** 넣었다.
+- 메뉴 숨기기만으로는 주소 직접 입력을 막을 수 없어서 URL 규칙도 함께 넣었다.
 
 | 주소        | USER | MANAGER | ADMIN |
 | ----------- | ---- | ------- | ----- |
@@ -137,45 +147,42 @@ Spring Boot 4.1 · Java 25 · Thymeleaf · Spring Data JPA · MySQL · Spring Se
 
 ---
 
-## 7주차 - REST API 개선하기
+## 7주차 - REST API 개선
 
 ### ① 회원 검색 API
 
 **문제** : `GET /api/admin/members?keyword=student`처럼 아이디나 이름에 검색어가 들어간 회원만 조회한다.
 
-**해결 방법**
+**해결**
 
-- `MemberRepository`에 `findByUsernameContainingOrNameContainingOrderByIdAsc()` 메서드를 추가했다.
-- `MemberService`에 `search(keyword)`를 만들었다. 검색어가 비어 있으면 전체 목록, 있으면 검색 결과를 돌려준다.
-- `AdminApiController`의 목록 메서드에 `@RequestParam(required = false) String keyword`를 추가했다.
+- `MemberRepository` : `findByUsernameContainingOrNameContainingOrderByIdAsc()`
+- `MemberService.search(keyword)` : 검색어가 비면 전체, 있으면 검색 결과
+- `AdminApiController` 목록 메서드에 `@RequestParam(required = false) String keyword`
 
 **이유**
 
-- JPA는 메서드 이름 규칙만 지키면 SQL을 대신 만들어 준다.
-  - `Containing` → `LIKE '%검색어%'`
-  - `Or` → `OR`
-  - `OrderByIdAsc` → `ORDER BY id`
-- `required = false`로 한 이유 : 검색어 없이 `/api/admin/members`만 호출해도 기존처럼 전체 목록이 나와야 하기 때문이다. (없으면 400 오류)
-- 응답은 기존처럼 `MemberResponse`(DTO)로 바꿔서 보내므로 비밀번호는 노출되지 않는다.
+- 메서드 이름 규칙으로 JPA가 SQL을 만든다 : `Containing` → `LIKE '%검색어%'`, `Or` → `OR`, `OrderByIdAsc` → `ORDER BY id`
+- `required = false` : 검색어 없이 호출해도 전체 목록이 나와야 한다. (없으면 400)
+- 응답은 `MemberResponse`(DTO)라서 비밀번호가 노출되지 않는다.
 
 ### ② 오류 처리 한 곳에 모으기
 
 **문제** : 등록·수정·삭제 메서드마다 같은 `try-catch`가 반복된다.
 
-**해결 방법**
+**해결**
 
-- `ApiExceptionHandler` 클래스를 새로 만들고 `@RestControllerAdvice`를 붙였다.
-- `@ExceptionHandler(IllegalArgumentException.class)`로 이 예외가 발생하면 `400 {"error": "메시지"}`를 응답하게 했다.
-- `AdminApiController`의 기존 메서드 3개(try-catch 포함)는 주석으로 남기고, try-catch를 뺀 새 메서드를 추가했다.
+- `ApiExceptionHandler` 클래스 + `@RestControllerAdvice`
+- `@ExceptionHandler(IllegalArgumentException.class)` → `400 {"error": "메시지"}`
+- `AdminApiController`의 기존 메서드 3개는 주석으로 남기고, try-catch 없는 새 메서드 추가
 
 **이유**
 
-- 같은 오류 처리 코드가 여러 곳에 있으면, 응답 형식을 바꿀 때 모든 곳을 고쳐야 하고 빠뜨리기 쉽다. 한 곳에 모으면 컨트롤러는 정상 흐름만 남아 읽기 쉬워진다.
-- `@RestControllerAdvice(annotations = RestController.class)`로 범위를 **API 컨트롤러로만** 제한했다. 화면 컨트롤러(`AdminController`, `MemberController`)는 오류를 화면 메시지로 보여줘야 하는데, 전체에 적용하면 화면 대신 JSON이 나올 수 있기 때문이다.
-- 반환 타입을 `ResponseEntity<?>`에서 `ResponseEntity<MemberResponse>`, `ResponseEntity<Void>`로 바꿨다. 이제 성공 응답만 반환하므로 타입을 정확하게 쓸 수 있다.
-- 추가로 `application.properties`에 `server.error.include-stacktrace=never`를 넣어 오류 JSON에 서버 내부 정보(trace)가 나가지 않게 했다.
+- 같은 오류 처리가 여러 곳에 있으면 바꿀 때 빠뜨리기 쉽다. 모으면 컨트롤러에는 정상 흐름만 남는다.
+- `@RestControllerAdvice(annotations = RestController.class)`로 **API 컨트롤러만** 적용했다. 화면 컨트롤러는 오류를 화면 메시지로 보여 줘야 하기 때문이다.
+- 반환 타입을 `ResponseEntity<?>`에서 `ResponseEntity<MemberResponse>`, `ResponseEntity<Void>`로 정확하게 바꿨다.
+- `server.error.include-stacktrace=never`로 오류 JSON에 서버 내부 정보가 나가지 않게 했다.
 
-**결과 확인** : try-catch를 지우기 전과 상태 코드·메시지가 똑같이 나오는지 테스트했다.
+**결과 확인** (try-catch를 지우기 전과 같은 결과)
 
 | 테스트                       | 결과                                               |
 | ---------------------------- | -------------------------------------------------- |
@@ -189,92 +196,58 @@ Spring Boot 4.1 · Java 25 · Thymeleaf · Spring Data JPA · MySQL · Spring Se
 
 ---
 
-## 문제 해결 기록
-
-| 증상                                                           | 원인 → 해결                                                                                                                                                                                                                    |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 서버 실행 시 `Access denied for user ... (using password: NO)` | DB 계정 정보를 담은 `application-secret.properties`가 `.gitignore`에 들어 있어서 다른 PC로 가져오면 빠져 있었다. `optional:`로 불러오기 때문에 오류 없이 넘어가고, 계정 없이 접속하다 실패한 것이다. → 파일을 다시 만들어 해결 |
-| AI 아이콘이 화면에 안 나옴                                     | 로컬 `bootstrap-icons.css`가 예전 버전 → 최신 CDN 링크 추가                                                                                                                                                                    |
-| curl로 테스트하면 로그인 화면(302) 대신 401                    | 7주차에 `httpBasic()`을 켜서, 브라우저가 아닌 요청에는 401을 응답한다. 브라우저에서는 그대로 로그인 화면으로 이동한다.                                                                                                         |
-| 권한을 바꿨는데 메뉴가 그대로                                  | 권한은 로그인할 때 세션에 복사된다 → 다시 로그인해야 반영                                                                                                                                                                      |
-
-> 주의 : DB 비밀번호는 `application-secret.properties`에만 두고 GitHub에 올리지 않는다. (5주차)
-
-# 9주차 - 게시판(CRUD) + 수정 및 삭제 / 본인 확인
-
-## 9주차 연습문제 - 게시판 개선하기
+## 9주차 - 게시판 CRUD
 
 ### ① 조회수
 
-**추가한 곳**
+**바꾼 곳**
 
-- `PostService` : `read(id)` 메서드 추가
-- `BoardController` : `detail()`에서 `findById()` 대신 `read()`를 호출 (기존 `detail()`은 주석으로 남김)
+- `PostService.read(id)` 추가
+- `BoardController.detail()` : `findById()` 대신 `read()` 호출 (기존 `detail()`은 주석)
 
 **하는 일**
 
-- `read(id)`는 `findById()`로 글을 찾은 뒤 `viewCount`를 1 올리고 `save()`로 저장한다. id가 있으므로 `save()`는 UPDATE를 실행한다.
-- 상세 화면(`GET /board/{id}`)을 열 때마다 조회수가 1씩 늘어나고, 목록·상세 화면의 "조회" 칸에 그대로 보인다.
-- 조회수만 바꾸고 `updatedAt`은 건드리지 않는다. 그래서 글을 읽기만 해도 "수정 시간"이 표시되는 문제가 생기지 않는다.
-- 없는 글 번호라면 `findById()`에서 404가 나므로 조회수 증가 전에 멈춘다.
+- `read(id)`는 글을 찾아 `viewCount`를 1 올리고 `save()`한다. id가 있으므로 UPDATE가 실행된다.
+- 조회수만 바꾸고 `updatedAt`은 건드리지 않아서, 읽기만 해도 "수정됨"이 붙는 문제가 없다.
+- 없는 글 번호는 `findById()`에서 404로 멈춘다.
 
 ### ② 내가 쓴 글 모아 보기
 
-**추가한 곳**
+**바꾼 곳**
 
-- `PostRepository` : `findByAuthor_UsernameOrderByIdDesc(String username)` 메서드 이름만 추가
-- `PostService` : `findMine(username)` 메서드 추가
-- `BoardController` : `GET /board/my` 를 처리하는 `my()` 메서드 추가
+- `PostRepository.findByAuthor_UsernameOrderByIdDesc(String username)`
+- `PostService.findMine(username)`
+- `BoardController.my()` : `GET /board/my`
 
 **하는 일**
 
-- 리포지토리 메서드는 이름 규칙만으로 JPA가 SQL을 만든다.
-  - `findBy` → `SELECT ... FROM posts`
-  - `Author_Username` → 작성자(author)의 username으로 `JOIN member ... WHERE m.username = ?`
-  - `OrderByIdDesc` → `ORDER BY p.id DESC` (최신 글이 위로)
-- `my()`는 `Principal`에서 로그인한 아이디를 꺼내 그 사람의 글만 조회하고, `posts`와 `listTitle = "내가 쓴 글"`을 넘겨 기존 `board/list.html`을 그대로 재사용한다. (`listTitle`이 없으면 화면은 "게시판"으로 표시)
-- `SecurityConfig`의 `permitAll()`은 `/board`와 `/board/{id:\d+}`(숫자)만 허용하므로, `/board/my`는 `anyRequest().authenticated()`에 걸려 로그인하지 않으면 로그인 화면으로 이동한다. 설정은 바꿀 필요가 없었다.
+- 이름 규칙 : `Author_Username` → 작성자의 username으로 `JOIN ... WHERE m.username = ?`, `OrderByIdDesc` → 최신 글이 위로
+- `my()`는 로그인 아이디의 글만 조회하고 `listTitle = "내가 쓴 글"`을 넘겨 `board/list.html`을 재사용한다.
+- `/board/my`는 `permitAll()`에 없어서 로그인하지 않으면 로그인 화면으로 간다. 설정 변경은 필요 없었다.
 
-**결과 확인**
+### 추가 개선 ① "내가 쓴 글"에서 전체 글로 돌아갈 수 없음
 
-| 하는 일                      | 기대 결과                          |
-| ---------------------------- | ---------------------------------- |
-| 같은 글 상세를 3번 열기      | 조회 3                             |
-| student1 로그인 → 내가 쓴 글 | student1의 글만, 제목 "내가 쓴 글" |
-| 로그인 안 하고 `/board/my`   | 로그인 화면                        |
-
-## =============================================
-
-## 9주차 추가 개선 - 게시판 사용성 문제 해결
-
-### ① "내가 쓴 글"에서 전체 글로 돌아갈 수 없음
-
-**문제** : "내가 쓴 글" 화면에도 버튼이 똑같이 "내가 쓴 글"로 보였다. 전체 글 목록으로 돌아가려면 메인으로 나갔다가 게시판 메뉴를 다시 눌러야 했다.
+**문제** : "내가 쓴 글" 화면에도 버튼이 "내가 쓴 글"이라, 전체 목록으로 가려면 메인으로 나갔다가 다시 들어와야 했다.
 
 **바꾼 곳**
 
-- `BoardController.my()` : `model.addAttribute("myList", true);` 한 줄 추가
-- `board/list.html` : 헤더의 "내가 쓴 글" 버튼(기존 줄은 주석 처리)을 아래 두 버튼으로 바꿨다.
+- `BoardController.my()` : `model.addAttribute("myList", true);`
+- `board/list.html` : 버튼 하나(주석 처리)를 아래 두 버튼으로 교체
 
 ```html
 <a th:unless="${myList}" th:href="@{/board/my}" ...>내가 쓴 글</a>
 <a th:if="${myList}" th:href="@{/board}" ...>전체 글 보기</a>
 ```
 
-**하는 일**
+- `listTitle`(제목)과 `myList`(화면 종류)를 따로 둬서, 제목 문구를 바꿔도 버튼 동작은 그대로다.
 
-- `myList`는 `/board/my`일 때만 넘어가는 값이다. 그래서 전체 목록(`/board`)에서는 "내가 쓴 글" 버튼이, 내가 쓴 글 화면에서는 "전체 글 보기" 버튼이 보인다.
-- `listTitle`(화면 제목)과 별도로 `myList`를 둔 이유 : 제목 문구와 화면 종류를 따로 관리해야, 나중에 제목만 바꿔도 버튼 동작이 함께 바뀌지 않는다.
+### 추가 개선 ② 뒤로가기 시 조회수가 바로 바뀌지 않음
 
-### ② 뒤로가기 시 목록의 조회수가 바로 바뀌지 않음
+**문제** : 목록 → 글 상세(조회수 +1) → 뒤로가기를 하면 목록에 이전 조회수가 보였다.
 
-**문제** : 목록 → 글 상세(조회수 +1) → 브라우저 뒤로가기를 누르면, 목록에는 이전 조회수가 그대로 보였다. 새로고침해야 반영됐다.
+**원인** : HTTP 캐시 문제가 아니었다 (서버는 이미 `no-cache, no-store`). 브라우저의 **뒤로/앞으로 캐시(bfcache)** 가 서버에 묻지 않고 이전 화면을 메모리에서 그대로 복원했다.
 
-**원인** : 서버는 이미 `Cache-Control: no-cache, no-store`를 보내고 있었다(스프링 시큐리티 기본값). 그래서 HTTP 캐시 문제는 아니었다. 브라우저의 **뒤로/앞으로 캐시(bfcache)** 가 서버에 다시 요청하지 않고, 떠나기 전 화면을 메모리에서 그대로 복원했기 때문이다.
-
-**바꾼 곳**
-
-- `board/list.html` : `</body>` 바로 앞에 `pageshow` 이벤트 스크립트 추가
+**바꾼 곳** : `board/list.html`의 `</body>` 앞
 
 ```html
 <script>
@@ -286,93 +259,76 @@ Spring Boot 4.1 · Java 25 · Thymeleaf · Spring Data JPA · MySQL · Spring Se
 </script>
 ```
 
-**하는 일**
-
-- `pageshow`는 화면이 보일 때마다 실행된다. 처음 열 때와 뒤로가기로 돌아올 때 모두 해당한다.
-- `event.persisted`가 `true`이면 bfcache에서 꺼낸 화면이라는 뜻이다. 이때만 `location.reload()`로 서버에서 목록을 다시 받아 최신 조회수를 보여준다.
-- 처음 열거나 링크로 들어온 경우에는 `persisted`가 `false`라서 새로고침하지 않는다. 그래서 요청이 두 번 가거나 무한 새로고침되지 않는다.
-- 목록 화면은 전체 목록과 내가 쓴 글이 함께 쓰므로 두 화면 모두 적용된다.
+- `event.persisted`가 `true`(bfcache에서 꺼낸 화면)일 때만 새로고침한다. 처음 열 때는 `false`라서 요청이 두 번 가거나 무한 새로고침되지 않는다.
 
 **결과 확인**
 
-| 하는 일                      | 기대 결과                            |
+| 하는 일                      | 결과                                 |
 | ---------------------------- | ------------------------------------ |
-| 로그인 → 게시판 → 내가 쓴 글 | 버튼이 "전체 글 보기"로 바뀜         |
+| 같은 글 상세를 여러 번 열기  | 열 때마다 조회 +1, 목록에도 반영     |
+| 로그인 → 내가 쓴 글          | 내 글만, 버튼이 "전체 글 보기"       |
 | "전체 글 보기" 클릭          | 전체 목록, 버튼은 다시 "내가 쓴 글"  |
-| 목록 → 글 상세 → 뒤로가기    | 목록의 조회수가 1 늘어난 값으로 보임 |
+| 로그인 안 하고 `/board/my`   | 로그인 화면                          |
 
 ---
 
-## 10주차 연습문제 - 게시판 개선하기
+## 10주차 - 페이징 · 검색 · 댓글
 
 ### ① 내가 쓴 글 페이징
 
-**문제** : 9주차 "내가 쓴 글"은 내 글을 한 번에 전부 꺼냈다. 전체 목록처럼 10개씩 나눠 보여 주고, 페이지 번호도 붙인다.
+**문제** : 9주차 "내가 쓴 글"은 한 번에 전부 꺼냈다. 10개씩 나누고 페이지 번호를 붙인다.
 
-**추가한 곳**
+**바꾼 곳**
 
 - `PostRepository` : `Page<Post> findByAuthor_Username(String username, Pageable pageable);`
-- `PostService` : `findMinePage(username, page)` 메서드 추가
-- `BoardController` : 기존 `my()`는 주석으로 남기고, `page` 파라미터를 받는 새 `my()`를 추가
+- `PostService.findMinePage(username, page)`
+- `BoardController.my()` : 기존은 주석, `page` 파라미터를 받는 새 `my()`
 
 **하는 일**
 
-- 메서드 이름 조회도 맨 뒤에 `Pageable`만 더하면 결과가 `Page`가 된다. `LIMIT · OFFSET · count` SQL은 스프링이 붙여 준다.
-- 정렬(최신 글이 위로)은 메서드 이름의 `OrderByIdDesc` 대신 `PageRequest.of(page, 10, Sort.by(DESC, "id"))`에 담아서 넘긴다. 전체 목록의 `findPage()`와 같은 방식이다.
-- 새 `my()`는 `posts`(이번 페이지의 글), `page`(페이지 정보), `pageUrl = "/board/my"`를 화면에 넘긴다.
-  - `list.html`의 페이지 번호는 `pageUrl`이 없으면 `/board`로 링크를 만든다. 그래서 `pageUrl`을 넘겨야 2페이지 링크가 `/board/my?page=1`이 되어 계속 내 글 안에서 이동한다.
-- `/board/my`는 9주차와 같이 `SecurityConfig`의 `permitAll()`에 들어 있지 않으므로 로그인하지 않으면 로그인 화면으로 이동한다.
-- 9주차의 `findMine()`, `findByAuthor_UsernameOrderByIdDesc()`는 지우지 않고 그대로 두었다.
+- 메서드 이름 조회도 맨 뒤에 `Pageable`만 더하면 `Page`가 된다. `LIMIT · OFFSET · count`는 스프링이 붙인다.
+- 정렬은 `PageRequest.of(page, 10, Sort.by(DESC, "id"))`에 담아 넘긴다.
+- `pageUrl = "/board/my"`를 넘겨야 페이지 링크가 `/board/my?page=1`이 되어 내 글 안에서 이동한다.
 
 ### ② 작성자로 검색
 
 **문제** : 검색 범위를 "제목+내용 / 작성자" 중에서 고를 수 있게 한다.
 
-**추가한 곳**
+**바꾼 곳**
 
-- `PostRepository` : JPQL 메서드 `searchByWriter()` 추가
+- `PostRepository` : JPQL 메서드 추가
 
 ```java
 @Query("SELECT p FROM Post p WHERE p.author.name LIKE %:name%")
 Page<Post> searchByWriter(@Param("name") String name, Pageable pageable);
 ```
 
-- `PostService` : `findPage(type, keyword, page)` 추가 (기존 `findPage(keyword, page)`는 그대로 두고 다시 사용)
-- `BoardController` : 기존 `list()`는 주석으로 남기고, `type` 파라미터를 받는 새 `list()`를 추가
+- `PostService.findPage(type, keyword, page)` : `writer`면 `searchByWriter()`, 아니면 기존 `findPage(keyword, page)`
+- `BoardController.list()` : 기존은 주석, `@RequestParam(defaultValue = "all") String type`을 받는 새 `list()`
 
 **하는 일**
 
-- `p.author.name`은 글 → 작성자(Member) → 이름 순서로 따라간다. JPA가 `posts JOIN member`를 자동으로 만들어 준다.
-- `:name`은 단계 2의 `:keyword`처럼 **파라미터 바인딩**이다. 그래서 작성자 검색에도 SQL 인젝션이 통하지 않는다.
-- 서비스의 `findPage(type, keyword, page)`
-  - `type`이 `writer`이고 검색어가 있으면 → `searchByWriter()` (작성자 이름 검색)
-  - 그 밖에는 → 기존 `findPage(keyword, page)` (제목+내용 검색, 검색어가 없으면 전체)
-- 컨트롤러는 `@RequestParam(defaultValue = "all") String type`으로 받고 `type`을 화면에 넘긴다.
-  - `type`이 넘어오면 `list.html`에 검색 범위 선택 상자가 나타나고, 고른 값이 선택된 채로 유지된다.
-  - 페이지 링크에도 `type=writer`가 붙어서 작성자 검색 결과의 2페이지도 작성자 검색으로 이어진다.
-  - `writer`가 아닌 값(빈칸, 이상한 값)은 `all`로 바꿔서 기존 검색처럼 동작하게 했다.
+- `p.author.name`은 글 → 작성자 → 이름으로 따라가며 JPA가 `JOIN`을 만든다.
+- `:name`은 **파라미터 바인딩**이라 SQL 인젝션이 통하지 않는다.
+- 검색 범위 선택 상자가 고른 값을 유지하고, 페이지 링크에도 `type=writer`가 붙는다.
+- `writer`가 아닌 이상한 값은 `all`로 처리한다.
 
 **결과 확인**
 
-| 하는 일                      | 기대 결과                         |
+| 하는 일                      | 결과                              |
 | ---------------------------- | --------------------------------- |
-| admin 로그인 → 내가 쓴 글    | 10개씩, 링크가 `/board/my?page=1` |
-| 로그인 안 하고 `/board/my`   | 로그인 화면                       |
+| admin → 내가 쓴 글           | 10개씩, 링크가 `/board/my?page=1` |
 | 작성자 선택 + "관리" 검색    | 관리자의 글만                     |
-| 제목+내용 선택 + "관리" 검색 | 제목·내용에 "관리"가 들어간 글만  |
+| 제목+내용 선택 + 검색        | 제목·내용에 검색어가 들어간 글만  |
 | 작성자 검색 결과 2페이지     | 주소에 `type=writer` 유지         |
 
----
+### 추가 개선 - 댓글이 화면 밖으로 넘침
 
-## 10주차 추가 개선 - 댓글이 화면 밖으로 넘치는 문제
+**문제** : 띄어쓰기 없이 긴 댓글(`ㅋㅋㅋ…`, 긴 주소)이 카드 밖으로 밀려나고 가로 스크롤이 생겼다.
 
-**문제** : 띄어쓰기 없이 긴 댓글(예 : `ㅋㅋㅋㅋ…`, 긴 주소)을 쓰면 댓글이 카드 밖으로 밀려나고 가로 스크롤이 생겼다.
+**원인** : `white-space: pre-wrap`은 **공백이 있는 곳에서만** 줄을 바꾼다. 공백 없는 긴 글자는 끊을 곳이 없었다. 글 내용과 제목도 같은 문제였다.
 
-**원인** : `.comment-content`의 `white-space: pre-wrap`은 줄바꿈을 그대로 보여 주지만, **공백이 있는 곳에서만** 줄을 바꾼다. 공백 없는 긴 글자는 한 단어로 취급되어 끊을 곳이 없으니 옆으로 계속 늘어났다. 글 내용(`.post-content`)과 제목도 같은 문제가 있었다.
-
-**바꾼 곳**
-
-- `static/css/board.css` 맨 아래에 규칙 추가 (기존 줄은 지우지 않고, 아래 규칙이 덮어쓴다)
+**바꾼 곳** : `static/css/board.css` 맨 아래 (기존 줄은 그대로, 아래 규칙이 덮어씀)
 
 ```css
 .comment-content,
@@ -392,61 +348,28 @@ Page<Post> searchByWriter(@Param("name") String name, Pageable pageable);
 }
 ```
 
-**하는 일**
-
-- `overflow-wrap: anywhere` : 한 줄에 들어갈 자리가 없으면 단어 중간에서라도 줄을 바꾼다. 그래서 긴 글자도 카드 너비 안에서 다음 줄로 내려간다.
-- `word-break: break-word` : 같은 동작을 예전 브라우저에서도 하게 하는 보조 설정이다.
-- 댓글뿐 아니라 글 내용, 상세 화면 제목, 목록 제목에도 같이 적용해서 같은 문제가 다른 곳에서 생기지 않게 했다.
-- 댓글 작성자 줄은 `d-flex` 안에 있다. flex 항목은 기본적으로 내용보다 작아지지 않으므로 `min-width: 0`을 주어 긴 이름이 삭제 버튼을 밀어내지 않게 했다.
-- 댓글 입력창은 위아래로만 크기를 바꿀 수 있게 해서, 끌어서 옆으로 늘려도 카드 밖으로 나가지 않게 했다.
-- 공백이 있는 일반 문장은 전처럼 단어 단위로 줄이 바뀐다. 단어 중간에서 끊기는 것은 공백 없이 너무 긴 글자일 때뿐이다.
-
-| 하는 일                          | 기대 결과                                      |
-| -------------------------------- | ---------------------------------------------- |
-| 공백 없이 300자 정도의 댓글 등록 | 카드 안에서 여러 줄로 내려감, 가로 스크롤 없음 |
-| 긴 주소(URL)를 댓글로 등록       | 카드 안에서 줄바꿈                             |
-| 보통 문장 댓글                   | 전처럼 단어 단위로 줄바꿈                      |
-
-# 11주차 파일 업로드 + 신청 바구니 + 트랜잭션 완료
-
-## 11주차 화면 파일 정리 - 이름이 겹치는 게시판 화면 합치기
-
-**문제** : `templates/board/`에 같은 화면이 여러 벌 있었다. (`list.html`, `list_11.html`, `list9.html`, `detail.html`, `detail_11.html`, `form.html`, `form_11.html`) 11주차 제공 화면(`list.html` 등)으로 덮어쓰면서 9·10주차에 직접 추가한 부분이 `_11`, `9` 파일에만 남아 있었다.
-
-**비교 결과**
-
-| 파일                          | 원본(11주차 제공)에 없던 부분                                     | 처리                                  |
-| ----------------------------- | ----------------------------------------------------------------- | ------------------------------------- |
-| `list_11.html`                | 9주차 개선 ① "내가 쓴 글 ↔ 전체 글 보기" 버튼, 9주차 개선 ② `pageshow` 새로고침 스크립트 | `list.html`로 옮김                   |
-| `list9.html`                  | 없음 (내용이 모두 `list_11.html` 안에 있음)                       | -                                     |
-| `detail_11.html`, `form_11.html` | 없음 (원본이 10주차 내용 + 11주차 모집·포스터까지 포함한 상위 버전) | -                                     |
-
-**바꾼 곳**
-
-- `board/list.html`
-  - 헤더의 "내가 쓴 글" 버튼(기존 줄은 주석 처리)을 `myList` 값에 따라 "내가 쓴 글" / "전체 글 보기"로 바뀌는 두 버튼으로 바꿨다.
-  - `</body>` 바로 앞에 `pageshow` 스크립트를 넣었다. 이제 뒤로가기로 돌아왔을 때 조회수뿐 아니라 모집글의 신청 인원(`모집 1/5`)도 최신 값으로 보인다.
-- 합친 뒤 `list_11.html`, `list9.html`, `detail_11.html`, `form_11.html`은 삭제했다. 내용은 원본에 모두 들어 있고, 이전 버전은 git 기록에 남아 있다.
+- `overflow-wrap: anywhere` : 자리가 없으면 단어 중간에서라도 줄을 바꾼다. (`word-break`는 예전 브라우저용 보조)
+- `min-width: 0` : flex 항목이 긴 이름 때문에 삭제 버튼을 밀어내지 않게 한다.
+- 댓글 입력창은 위아래로만 크기 조절 가능
+- 공백이 있는 보통 문장은 전처럼 단어 단위로 줄이 바뀐다.
 
 ---
 
-## 11주차 연습문제 - 신청기 개선하기
+## 11주차 - 신청 바구니와 트랜잭션
 
 ### ① 신청 취소
 
-**문제** : 내 신청 내역의 취소 버튼으로 신청을 취소한다. 신청 내역 삭제 + 신청 인원 - 1.
+**문제** : 내 신청 내역의 취소 버튼으로 신청을 취소한다. (신청 내역 삭제 + 신청 인원 - 1)
 
-**조건과 해결**
+| 조건                                  | 어떻게 지켰나                                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 본인 신청만 취소 (남의 것은 403)      | 신청 회원과 로그인 아이디가 다르면 `AccessDeniedException` → 403 화면                       |
+| 두 작업을 한 트랜잭션으로             | `cancel()`에 `@Transactional` → 하나라도 실패하면 둘 다 롤백                                |
+| `save()` 없이 변경 감지로 인원 줄이기 | `post.setAppliedCount(... - 1)`만 하고 `save()`는 부르지 않는다                             |
 
-| 조건                          | 어떻게 지켰나                                                                                         |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------- |
-| 본인 신청만 취소 (남의 것은 403) | 신청 내역의 회원 아이디와 로그인 아이디가 다르면 `AccessDeniedException` → 6주차 403 화면 (9주차 `checkWriter()`와 같은 방식) |
-| 두 작업을 한 트랜잭션으로     | `cancel()`에 `@Transactional` → 삭제와 인원 감소 중 하나라도 실패하면 둘 다 롤백                       |
-| `save()` 없이 변경 감지로 인원 줄이기 | `enrollment.getPost().setAppliedCount(... - 1)`만 하고 `postRepository.save()`는 부르지 않는다      |
+**바꾼 곳**
 
-**추가한 곳**
-
-- `EnrollmentService` : `cancel(enrollmentId, username)` 메서드
+- `EnrollmentService.cancel(enrollmentId, username)`
 
 ```java
 @Transactional
@@ -462,110 +385,56 @@ public void cancel(Long enrollmentId, String username) {
 }
 ```
 
-- `CartController` : `POST /cart/enrollments/{id}/cancel`을 처리하는 `cancel()` 추가. 성공하면 flash 메시지 "신청이 취소되었습니다."와 함께 `/cart`로 돌아간다.
-- `templates/cart.html` : `[11주차 연습문제 1]` 주석(`<!--/* ... */-->`)을 풀어 취소 버튼이 보이게 했다.
+- `CartController` : `POST /cart/enrollments/{id}/cancel` → 성공하면 "신청이 취소되었습니다."와 함께 `/cart`
+- `templates/cart.html` : 취소 버튼 주석 해제
 
 **하는 일**
 
-- **변경 감지** : `@Transactional` 안에서 꺼낸 `Post`는 JPA가 커밋할 때까지 지켜본다. 값만 바꿔 두면 커밋할 때 처음 값과 비교해서 `UPDATE posts set applied_count=?`를 자동으로 보낸다. 그래서 `save()`가 필요 없다.
-- **한 트랜잭션** : 신청 내역 `DELETE`와 신청 인원 `UPDATE`가 같은 트랜잭션에서 함께 커밋된다. 중간에 예외가 나면 둘 다 롤백되므로 "내역은 지워졌는데 인원은 그대로" 같은 상태가 생기지 않는다.
-- **403** : `AccessDeniedException`은 스프링 시큐리티가 받아서 403 화면으로 보낸다. 컨트롤러에서 잡지 않았기 때문에 예외가 그대로 시큐리티까지 전달된다.
-- 없는 신청 번호는 404, 인원은 `Math.max(..., 0)`으로 0 아래로 내려가지 않게 했다.
-- 마감된 모집글(예 : C 1/1)에서 한 명이 취소하면 `appliedCount < capacity`가 되어 `isFull()`이 `false` → 다시 "모집 중"이 된다.
+- **변경 감지** : `@Transactional` 안에서 꺼낸 엔티티는 JPA가 지켜보다가, 커밋할 때 바뀐 값을 `UPDATE`로 자동 반영한다.
+- **한 트랜잭션** : `DELETE`와 `UPDATE`가 함께 커밋되거나 함께 롤백된다. "내역은 지워졌는데 인원은 그대로" 같은 상태가 생기지 않는다.
+- 없는 신청 번호는 404, 인원은 0 아래로 내려가지 않는다.
+- 마감된 모집글에서 한 명이 취소하면 다시 "모집 중"이 된다.
 
 ### ② 삭제 정리
 
-**문제** : 신청자가 있는 모집글이나 신청 내역이 있는 회원을 지우면 외래 키(`enrollments.post_id`, `enrollments.member_id`) 때문에 500 오류가 난다. 포스터 파일도 글을 지운 뒤 `uploads/`에 그대로 남는다.
+**문제** : 신청자가 있는 모집글이나 신청 내역이 있는 회원을 지우면 외래 키 때문에 500 오류가 난다. 글을 지워도 포스터 파일은 `uploads/`에 남는다.
 
-**추가·변경한 곳**
+**바꾼 곳**
 
-- `EnrollmentRepository` : `existsByPost(Post)`, `existsByMember(Member)` 추가
-- `PostService.delete()` : 기존 메서드는 주석으로 남기고 새로 작성
+- `EnrollmentRepository` : `existsByPost(Post)`, `existsByMember(Member)`
+- `PostService.delete()` (기존은 주석)
   - 신청 내역이 있으면 `IllegalStateException("신청자가 있는 모집글은 삭제할 수 없습니다.")`
-  - `postRepository.delete(post)`가 성공한 **다음에** `fileStore.delete(post.getPosterFile())`
-- `BoardController.delete()` : 기존 메서드는 주석으로 남기고, 예외를 잡아 `redirect:/board/{id}?deleteError`로 보내는 새 메서드 작성 (`detail.html`이 안내 메시지를 보여 준다)
-- `MemberService.deleteMember()` : 기존 글·댓글 검사 아래에 `enrollmentRepository.existsByMember(member)` 검사 추가 → `IllegalArgumentException("신청 내역이 있는 회원은 삭제할 수 없습니다.")`
+  - DB 삭제가 성공한 **다음에** `fileStore.delete(post.getPosterFile())`
+- `BoardController.delete()` (기존은 주석) : 예외를 잡아 `redirect:/board/{id}?deleteError` → 상세 화면에 안내
+- `MemberService.deleteMember()` : `existsByMember()` 검사 추가 → "신청 내역이 있는 회원은 삭제할 수 없습니다."
 
 **하는 일**
 
-- 10주차 회원 삭제와 같은 방식이다. DB가 외래 키로 거부하기 **전에** 서비스가 `exists...()`로 먼저 확인해서, 500 대신 안내 메시지를 보여 준다.
-- 회원 삭제는 `IllegalArgumentException`을 쓰므로 관리자 화면(6주차)에는 빨간 안내, 관리자 API(7주차)에는 `400 {"error": ...}`가 그대로 나온다.
-- 모집글 → 신청 내역은 10주차 댓글처럼 cascade로 함께 지우지 않고 **막는다**. 신청한 사람이 모르는 사이에 신청이 사라지면 안 되기 때문이다.
-- 포스터 파일은 DB 삭제가 성공한 뒤에 지운다. 파일 삭제는 트랜잭션 롤백이 되지 않기 때문에(PDF 42장 함정 ④), 순서를 반대로 하면 DB 삭제가 실패했을 때 파일만 사라진 글이 남는다.
+- DB가 외래 키로 거부하기 **전에** 서비스가 먼저 확인해서 500 대신 안내 메시지를 보여 준다.
+- 모집글의 신청 내역은 댓글처럼 cascade로 지우지 않고 **막는다**. 신청한 사람 모르게 신청이 사라지면 안 된다.
+- 파일 삭제는 롤백되지 않으므로 DB 삭제가 성공한 뒤에 지운다.
 
 **결과 확인**
 
-| 하는 일                              | 기대 결과                                       |
-| ------------------------------------ | ----------------------------------------------- |
-| student1 : B 신청 취소               | "신청이 취소되었습니다.", B 0/5                 |
-| 남의 신청 번호로 취소 요청           | 403                                             |
-| 마감된 C 를 student3 이 취소         | C 가 다시 모집 중 (0/1)                         |
-| 신청자 있는 모집글 삭제              | 상세 화면에 "신청자가 있는 모집글은 삭제할 수 없습니다." |
-| 신청자 없는 포스터 글 삭제           | 글 삭제 + `uploads/`의 포스터 파일도 사라짐     |
-| 신청 내역 있는 회원 삭제             | 관리자 화면 안내 메시지, API 400                |
+| 하는 일                    | 결과                                                     |
+| -------------------------- | -------------------------------------------------------- |
+| 본인 신청 취소             | "신청이 취소되었습니다.", 인원 - 1                       |
+| 남의 신청 번호로 취소      | 403 (인원 그대로)                                        |
+| 없는 신청 번호로 취소      | 404                                                      |
+| 마감된 모집글을 취소       | 다시 모집 중                                             |
+| 신청자 있는 모집글 삭제    | 상세 화면에 "신청자가 있는 모집글은 삭제할 수 없습니다." |
+| 신청자 없는 포스터 글 삭제 | 글 + `uploads/`의 포스터 파일 삭제                       |
+| 신청 내역 있는 회원 삭제   | 관리자 화면 안내 메시지, API 400                         |
 
 ---
 
-## 12주차 pull 후 정리 - 11주차 연습문제 다시 합치기
+## 12주차 - WebSocket 실시간 알림
 
-**상황** : 11주차 연습문제 작업을 푸시하지 못한 상태에서 다른 PC로 12주차(실시간 알림)를 작업해 푸시했다. (`12주차 - 수강취소 오류있음`) 다른 PC에는 취소 버튼(`cart.html`)만 있고 처리 코드가 없어서 취소가 동작하지 않았다.
+### ① 신청 취소도 실시간
 
-**한 일**
+**문제** : 11주차 신청 취소는 DB만 바꾸고 실시간 메시지를 보내지 않았다. 열어 둔 화면의 남은 자리가 그대로였고, 모집글 쓴 사람도 취소를 알 수 없었다.
 
-- 이 PC의 11주차 작업을 잠시 보관(stash)한 뒤 12주차를 받고(pull), 그 위에 다시 합쳤다.
-  - 자바 코드(`EnrollmentService`, `CartController`, `PostService`, `BoardController`, `MemberService`, `EnrollmentRepository`)는 충돌 없이 합쳐졌다. `EnrollmentService`에는 12주차 이벤트 발행 코드와 11주차 `cancel()`이 함께 있다.
-  - `board/list.html` : 12주차 실시간 알림 스크립트(`stomp.umd.min.js`, `realtime.js`) 아래에 9주차 `pageshow` 새로고침 스크립트를 이어 붙였다.
-  - `cart.html` : 다른 PC에서 이미 취소 버튼 주석을 풀어 두어서 그 버전을 그대로 사용했다.
-- 12주차에 새로 생긴 사본도 11주차 때처럼 원본과 비교해 합쳤다.
-
-| 사본                         | 원본에 없던 부분                                              | 처리                                    |
-| ---------------------------- | ------------------------------------------------------------- | --------------------------------------- |
-| `cart12.html`                | 바구니 "남은 자리" 칸의 `data-seat-post` · `data-field="remaining"` (12주차 실시간 갱신) | `cart.html`로 옮김 (기존 줄은 주석 처리) |
-| `board/list전.html`, `board/detail전.html` | 없음 (12주차 원본이 같은 기능을 실시간 버전으로 포함)        | -                                       |
-| `static/css/board전.css`     | 없음                                                          | -                                       |
-
-- 합친 뒤 사본 4개는 삭제했다. (이전 내용은 git 기록에 남아 있다)
-
-**결과** : `POST /cart/enrollments/{id}/cancel`을 처리하는 코드가 들어와서 "수강취소 오류"가 해결된다. 10주차 댓글 넘침 CSS, 11주차 삭제 정리도 그대로 유지된다.
-
----
-
-## 연습문제 다시 점검 (2026-11-25)
-
-### 2주차 - `/hello2` 로그인 없이 열기
-
-**문제** : 5주차 보안 설정에서 `/hello`만 `permitAll()`이라, 누구나 보는 `/hello`의 "두번째 헬로 페이지" 링크를 누르면 로그인 화면으로 이동했다.
-
-**바꾼 곳** : `SecurityConfig`의 정적 리소스 줄 아래에 `.requestMatchers("/hello2").permitAll()` 추가
-
-### 3주차 - 사라진 포트폴리오 수정 복구
-
-**문제** : 9주차 제공 `index.html`로 덮어쓰면서(커밋 `71987c2`) 3주차에 고친 부분이 원래 템플릿으로 돌아가 있었다.
-- AI · 보안 · 게임의 "Discover More" 링크가 다시 `href="#"`
-- 보안 아이콘 `bi-phone`, 게임 아이콘 `bi-google`
-- 최신 아이콘 CDN 링크가 없어 AI 아이콘(`bi-anthropic`)이 보이지 않음
-
-**바꾼 곳** : `templates/index.html` (기존 줄은 주석으로 남김)
-- `<head>`에 `bootstrap-icons@1.13.1` CDN 링크 다시 추가
-- "Discover More" 3개를 `/detailed_ai.html`, `/detailed_security.html`, `/detailed_game.html`로 연결 (`target="_blank" rel="noopener noreferrer"`)
-- 아이콘 `bi-phone` → `bi-shield-lock`, `bi-google` → `bi-controller`
-
-**결과 확인** : 로그인 없이 `/`, `/hello2`, 상세 페이지 4개 모두 200. CDN에 `bi-anthropic`, `bi-shield-lock`, `bi-controller`가 들어 있는 것도 확인했다.
-
-### 4 ~ 11주차 - 점검 결과 (코드 변경 없음)
-
-- 4주차 `/testdb` 표 출력, 5주차 로그인 상태 유지 · 비밀번호 확인, 6주차 MANAGER 권한 · 본인 보호, 7주차 회원 검색 API · 오류 처리, 9주차 조회수 · 내가 쓴 글, 10주차 페이징 · 작성자 검색, 11주차 신청 취소 · 삭제 막기를 서버를 띄워 직접 확인했다. 모두 정상이고 서버 로그 ERROR 0건.
-- 참고 : README 4주차에 적힌 `testdb_update.sql` 파일은 저장소에 없다 (데이터는 DB에 이미 있음).
-
----
-
-## 12주차 연습문제 - 신청 취소도 실시간 & 댓글 알림
-
-### 연습 ① 취소 실시간
-
-**문제** : 11주차 연습문제로 만든 신청 취소는 DB만 바꾸고 실시간 메시지를 보내지 않았다. 다른 사람이 열어 둔 화면의 남은 자리가 그대로였고, 모집글 쓴 사람도 취소 사실을 알 수 없었다.
-
-**바꾼 곳** : `model/service/EnrollmentService.java`의 `cancel()` 끝부분 (기존 코드는 그대로, 아래에 추가)
+**바꾼 곳** : `EnrollmentService.cancel()` 끝부분에 추가
 
 ```java
 eventPublisher.publishEvent(SeatMessage.from(post)); // 남은 자리가 다시 늘어난다
@@ -578,29 +447,81 @@ if (!writer.equals(username)) { // 내 글의 신청을 내가 취소하면 생�
 ```
 
 **하는 일**
-- `cancel()`은 11주차에 이미 `@Transactional`이라 이벤트만 던지면 된다. 커밋이 성공하면 `RealtimeNotifier`가 보낸다 (실패해서 롤백되면 보내지 않는다).
-- `SeatMessage` → `/topic/seats` : 목록 · 상세 · 바구니 화면의 남은 자리와 배지가 바로 바뀐다 (마감 → 모집 중).
-- `Notification` → 모집글 쓴 사람에게만 "OO님이 '…' 신청을 취소했습니다." 알림
 
-### 연습 ② 댓글 알림
+- `cancel()`은 이미 `@Transactional`이라 이벤트만 던지면 된다. 커밋이 성공하면 `RealtimeNotifier`가 보낸다. (롤백되면 보내지 않음)
+- `SeatMessage` → `/topic/seats` : 목록 · 상세 · 바구니의 남은 자리와 배지가 바로 바뀐다. (마감 → 모집 중)
+- `Notification` → 모집글 쓴 사람에게만 "OO님이 '…' 신청을 취소했습니다."
 
-**문제** : 내 글에 댓글이 달려도 알 수 없었다. 이벤트만 던지면 알림이 오지 않는다. 10주차 `CommentService.write()`에 `@Transactional`이 없어서, 트랜잭션이 끝나야 실행되는 `@TransactionalEventListener`가 움직이지 않기 때문이다.
+### ② 댓글 알림
 
-**바꾼 곳** : `model/service/CommentService.java` (기존 `write()`는 주석으로 남김)
-- `ApplicationEventPublisher eventPublisher` 필드와 import 3줄(`Notification`, `ApplicationEventPublisher`, `Transactional`) 추가
+**문제** : 내 글에 댓글이 달려도 알 수 없었다. 그런데 이벤트만 던지면 알림이 오지 않는다. 10주차 `CommentService.write()`에 `@Transactional`이 없어서, 커밋 뒤에 실행되는 `@TransactionalEventListener`가 움직이지 않기 때문이다.
+
+**바꾼 곳** : `CommentService` (기존 `write()`는 주석)
+
+- `ApplicationEventPublisher eventPublisher` 필드와 import 3줄 추가
 - `write()`에 `@Transactional` 추가
-- 저장한 뒤 글쓴이가 댓글 쓴 사람과 다르면 `Notification` 이벤트 발행 : "OO님이 '…' 에 댓글을 남겼습니다."
+- 글쓴이와 댓글 쓴 사람이 다르면 `Notification` 발행 : "OO님이 '…' 에 댓글을 남겼습니다."
 - 내 글에 내 댓글은 알림 없음
 
-화면(`realtime.js`, `detail.html`, `list.html`, `cart.html`)은 12주차 수업 코드가 이미 `SeatMessage` · `Notification`을 처리하므로 고치지 않았다.
+화면(`realtime.js`, `detail.html`, `list.html`, `cart.html`)은 12주차 수업 코드가 이미 처리하므로 고치지 않았다.
 
-### 결과 확인
+**결과 확인** (admin으로 `/topic/seats`, `/user/queue/notifications` 구독, 임시 회원·모집글로 확인 후 삭제)
 
-admin 세션으로 `/topic/seats`, `/user/queue/notifications`를 구독하고, 임시 회원(김학생)과 임시 모집글(정원 1)로 확인했다. 확인한 뒤 임시 회원과 임시 모집글은 삭제했다.
+| 하는 일                    | 결과                                                                                     |
+| -------------------------- | ---------------------------------------------------------------------------------------- |
+| 김학생이 신청 확정         | 남은 자리 0 (마감) + admin에게 신청 알림                                                 |
+| 김학생이 신청 취소         | 남은 자리 1, 상세 화면 마감 → 모집 중, admin에게 "김학생님이 '…' 신청을 취소했습니다. (0/1)" |
+| 김학생이 admin 글에 댓글   | admin에게 "김학생님이 '…' 에 댓글을 남겼습니다."                                         |
+| admin이 자기 글에 댓글     | 알림 없음                                                                                |
 
-| # | 하는 일 | 결과 |
-| --- | --- | --- |
-| 1 | 김학생이 신청 확정 | 남은 자리 0 (마감) + admin에게 신청 알림 |
-| 2 | 김학생이 신청 취소 | `{"appliedCount":0,"remaining":1}` 전송, 상세 화면 마감 → 모집 중, admin에게 "김학생님이 '…' 신청을 취소했습니다. (0/1)" |
-| 3 | 김학생이 admin의 글에 댓글 | admin에게 "김학생님이 '…' 에 댓글을 남겼습니다." |
-| 4 | admin이 자기 글에 댓글 | 알림 없음 |
+> 참고 : 취소로 자리가 생겨도, 이미 열려 있던 상세 화면의 "신청 바구니에 담기" 버튼은 새로고침해야 나타난다. (표시만 실시간으로 바뀜)
+
+---
+
+## 작업 기록
+
+### 11주차 - 이름이 겹치는 게시판 화면 합치기
+
+11주차 제공 화면으로 덮어쓰면서, 9·10주차에 직접 추가한 부분이 사본(`_11`, `9`)에만 남아 있었다.
+
+| 사본                             | 원본에 없던 부분                                         | 처리               |
+| -------------------------------- | -------------------------------------------------------- | ------------------ |
+| `list_11.html`                   | 9주차 개선 ① 버튼 전환, 9주차 개선 ② `pageshow` 스크립트 | `list.html`로 옮김 |
+| `list9.html`                     | 없음 (`list_11.html`에 모두 포함)                        | -                  |
+| `detail_11.html`, `form_11.html` | 없음 (원본이 상위 버전)                                  | -                  |
+
+합친 뒤 사본 4개는 삭제했다. (이전 내용은 git 기록에 남아 있음)
+
+### 12주차 pull 후 - 11주차 연습문제 다시 합치기
+
+**상황** : 11주차 연습문제를 푸시하지 못한 채 다른 PC에서 12주차를 작업해 푸시했다. 다른 PC에는 취소 버튼만 있고 처리 코드가 없어서 취소가 동작하지 않았다. (`12주차 - 수강취소 오류있음`)
+
+**한 일**
+
+- 11주차 작업을 stash → 12주차 pull → 다시 합침
+  - 자바 코드는 충돌 없이 합쳐졌다. `EnrollmentService`에 12주차 이벤트 코드와 11주차 `cancel()`이 함께 있다.
+  - `board/list.html` : 12주차 실시간 스크립트 아래에 9주차 `pageshow` 스크립트를 이어 붙였다.
+  - `cart.html` : 다른 PC 버전 사용
+- 12주차에 생긴 사본도 원본과 비교해 합쳤다.
+
+| 사본                                       | 원본에 없던 부분                                     | 처리                                 |
+| ------------------------------------------ | ---------------------------------------------------- | ------------------------------------ |
+| `cart12.html`                              | 남은 자리 칸의 `data-seat-post` (실시간 갱신)        | `cart.html`로 옮김 (기존 줄은 주석) |
+| `board/list전.html`, `board/detail전.html` | 없음 (12주차 원본이 실시간 버전으로 포함)            | -                                    |
+| `static/css/board전.css`                   | 없음                                                 | -                                    |
+
+합친 뒤 사본 4개는 삭제했다.
+
+---
+
+## 문제 해결 기록
+
+| 증상                                                           | 원인 → 해결                                                                                                                                                         |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 서버 실행 시 `Access denied for user ... (using password: NO)` | DB 계정 파일 `application-secret.properties`가 `.gitignore`라 다른 PC에 없었다. `optional:`로 불러와서 오류 없이 넘어가고 계정 없이 접속하다 실패 → 파일을 다시 만듦 |
+| AI 아이콘이 화면에 안 나옴                                     | 로컬 `bootstrap-icons.css`가 예전 버전 → 최신 CDN 링크 추가                                                                                                         |
+| curl로 테스트하면 로그인 화면(302) 대신 401                    | 7주차 `httpBasic()` 때문에 브라우저가 아닌 요청에는 401. 브라우저는 그대로 로그인 화면                                                                              |
+| 권한을 바꿨는데 메뉴가 그대로                                  | 권한은 로그인할 때 세션에 복사된다 → 다시 로그인해야 반영                                                                                                           |
+| 뒤로가기 하면 목록 조회수가 예전 값                            | 브라우저 bfcache → `pageshow` + `event.persisted`일 때 새로고침 (9주차 개선 ②)                                                                                      |
+| 긴 댓글이 카드 밖으로 넘침                                     | 공백 없는 글자는 줄바꿈 안 됨 → `overflow-wrap: anywhere` (10주차 개선)                                                                                             |
+| 댓글 알림 이벤트를 던졌는데 알림이 안 옴                       | `@TransactionalEventListener`는 트랜잭션이 있어야 실행 → `write()`에 `@Transactional` (12주차 ②)                                                                    |
