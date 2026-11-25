@@ -595,6 +595,50 @@ a.auth-icon { background: var(--hz-grad); }                    /* 로그인 · �
 .side-nav a.active { background: var(--hz-btn-purple); color: var(--hz-btn-purple-text); font-weight: 700; }
 .side-nav a.admin { color: var(--hz-danger); }
 
+/* ---------- [여백 활용 ⑥] 오른쪽 위젯 : 모집 중 · 최근 알림 (js/theme.js 가 만든다) ----------
+   왼쪽 빠른 메뉴와 같은 조건(1860px 이상) · 같은 카드 모양, 오른쪽 여백 가운데 */
+.side-widget { display: none; }
+@media (min-width: 1860px) {
+    .side-widget {
+        display: flex; flex-direction: column; gap: 14px;
+        position: fixed; z-index: 2;
+        top: 48px;
+        right: calc((100vw - 1400px) / 4);
+        transform: translateX(50%);
+        width: 200px;
+        max-height: calc(100vh - 140px);       /* 아래쪽 빛 조절 버튼과 겹치지 않게 */
+        overflow-y: auto;
+    }
+}
+.side-title { display: flex; align-items: center; font-weight: 700; font-size: 14px; margin-bottom: 10px; }
+.side-clear {
+    margin-left: auto; border: 0; background: none; padding: 0;
+    font-size: 12px; color: var(--hz-muted); cursor: pointer;
+}
+.side-clear:hover { color: var(--hz-danger); }
+.side-empty { font-size: 12px; color: var(--hz-muted); margin: 0; line-height: 1.5; }
+.side-recruit, .side-noti { list-style: none; margin: 0; padding: 0; }
+.side-recruit li { padding: 10px 0; border-bottom: 1px solid var(--hz-border); }
+.side-recruit li:first-child { padding-top: 0; }
+.side-recruit-title {                          /* 제목 : 두 줄까지만, 넘치면 … */
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    font-size: 13px; font-weight: 600; color: var(--hz-text); text-decoration: none; line-height: 1.4;
+}
+.side-recruit-title:hover { color: var(--hz-teal); }
+.side-recruit-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; font-size: 12px; color: var(--hz-muted); }
+.side-recruit-meta strong { color: var(--hz-teal); }
+.side-widget .recruit-badge {                  /* board.css 가 없는 화면(메인 등)에서도 배지 모양이 나오게 */
+    display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 10px;
+}
+.side-bar { height: 4px; border-radius: 4px; background: var(--hz-border); margin-top: 6px; overflow: hidden; }
+.side-bar-fill { height: 100%; background: var(--hz-grad); transition: width .4s; }
+.side-more { display: block; text-align: center; font-size: 12px; margin-top: 10px; color: var(--hz-purple); text-decoration: none; }
+.side-noti li { padding: 8px 0; border-bottom: 1px solid var(--hz-border); font-size: 12px; line-height: 1.45; }
+.side-noti li:last-child { border-bottom: 0; }
+.side-noti a { color: var(--hz-text); text-decoration: none; display: block; }
+.side-noti a:hover { color: var(--hz-teal); }
+.side-time { display: block; color: var(--hz-muted); font-size: 11px; margin-top: 2px; }
+
 /* ---------- 9. 모드 바꾸기 버튼 (js/theme.js 가 화면 왼쪽 아래에 넣는다) ---------- */
 .theme-toggle {
     position: fixed; left: 16px; bottom: 16px; z-index: 1085;

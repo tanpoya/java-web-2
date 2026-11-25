@@ -49,6 +49,8 @@
         t.appendChild(document.createTextNode(n.text)); // 글자로만 넣는다 (XSS 방지)
         area.appendChild(t);
         setTimeout(function () { t.remove(); }, 6000);
+        // [여백 활용 ⑥] 알림이 왔다고 화면 전체에 알린다 → 오른쪽 위젯(theme.js)이 받아서 "최근 알림" 목록에 쌓는다
+        document.dispatchEvent(new CustomEvent('hz:notification', { detail: n }));
         if (count) {
             count.textContent = Number(count.textContent || 0) + 1;
             count.hidden = false;

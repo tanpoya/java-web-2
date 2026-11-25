@@ -102,6 +102,11 @@ public class PostService {
         return postRepository.findByAuthor_Username(username, pageable);
     }
 
+    // [여백 활용 ⑥] 모집 중인 글 몇 개 (최신 순) : 오른쪽 위젯용
+    public List<Post> findRecruiting(int limit) {
+        return postRepository.findRecruiting(PageRequest.of(0, limit));
+    }
+
     // [11주차] 단계 3 : 바구니에 담긴 글들 (번호 목록으로 한 번에)
     public List<Post> findAllById(Collection<Long> ids) {
         return postRepository.findAllById(ids); // SELECT ... WHERE id IN (?, ?, ?)

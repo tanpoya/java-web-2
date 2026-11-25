@@ -2,6 +2,7 @@ package com.example.demo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod; // [여백 활용 ⑥] GET 요청만 허용할 때
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -40,6 +41,8 @@ public class SecurityConfig {
                                                 .hasRole("ADMIN")
 
                                                 .requestMatchers("/api/hello").permitAll()
+                                                // [여백 활용 ⑥] 오른쪽 위젯의 모집 중 목록 : 게시판 목록처럼 누구나 (읽기 전용)
+                                                .requestMatchers(HttpMethod.GET, "/api/posts/recruiting").permitAll()
                                                 // [3주차 연습문제] 기술 상세 페이지 (AI, 보안, 게임) : 누구나
                                                 .requestMatchers("/detailed_ai.html", "/detailed_security.html",
                                                                 "/detailed_game.html")

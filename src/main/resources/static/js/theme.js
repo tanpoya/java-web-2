@@ -129,6 +129,17 @@
     });
 })();
 
+// [여백 활용 ⑥] 로그인 정보 공용 함수 : 왼쪽 메뉴 · 오른쪽 위젯이 둘 다 쓰므로 /api/me 를 한 번만 부르고 결과를 함께 쓴다
+// 200 → { username, name, role } , 401(로그인 안 함) → null
+window.hzMe = function () {
+    if (!window.hzMePromise) {
+        window.hzMePromise = fetch('/api/me', { headers: { 'Accept': 'application/json' } })
+            .then(function (res) { return res.ok ? res.json() : null; })
+            .catch(function () { return null; });
+    }
+    return window.hzMePromise;
+};
+
 // [여백 활용 ⑤] 왼쪽 빠른 메뉴 : 로그인 정보 + 바로가기 (참고 디자인 왼쪽의 프로필 상자처럼)
 // - 누가 로그인했는지는 7주차에 만든 GET /api/me 로 묻는다 → 화면(HTML)마다 코드를 넣지 않아도 된다
 //   200 이면 { username, name, role } , 로그인 안 했으면 401
@@ -207,10 +218,11 @@
 
     function init() {
         if (document.querySelector('.side-menu')) return;      // 한 번만
-        fetch('/api/me', { headers: { 'Accept': 'application/json' } })
-            .then(function (res) { return res.ok ? res.json() : null; })   // 401(로그인 안 함) → null
-            .catch(function () { return null; })
-            .then(build);
+        // fetch('/api/me', { headers: { 'Accept': 'application/json' } })
+        //     .then(function (res) { return res.ok ? res.json() : null; })
+        //     .catch(function () { return null; })
+        //     .then(build);
+        window.hzMe().then(build);                // [여백 활용 ⑥] 오른쪽 위젯과 같이 쓰도록 공용 함수로 (한 번만 요청)
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -218,5 +230,143 @@
         const mq = window.matchMedia(WIDE);
         if (mq.matches) init();
         mq.addEventListener('change', function (e) { if (e.matches) init(); });   // 창을 넓히면 그때 만든다
+    });
+})();
+
+// [여백 활용 ⑥] 오른쪽 위젯 : ① 모집 중인 글 (남은 자리 실시간) ② 최근 알림
+// ① GET /api/posts/recruiting 으로 받는다. 각 줄에 data-seat-post · data-field 를 붙여 두면
+//    12주차 realtime.js 가 남은 자리 메시지를 받을 때 위젯 숫자 · 막대도 같이 바꾼다 (게시판 · 바구니 화면)
+// ② realtime.js 가 알림을 띄울 때 보내는 'hz:notification' 이벤트를 받아 쌓는다
+//    sessionStorage 에 최근 5개를 보관 → 다른 화면으로 가도 브라우저를 닫기 전까지 남는다
+(function () {
+    const WIDE = '(min-width: 1860px)';
+    const NOTI_KEY = 'hzNotis', NOTI_MAX = 5;
+
+    function el(tag, cls, text) {
+        const e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text != null) e.textContent = text;   // 제목 · 알림 글은 글자로만 (XSS 방지)
+        return e;
+    }
+    function icon(cls) { return el('i', cls); }
+
+    function loadNotis() {
+        try { return JSON.parse(sessionStorage.getItem(NOTI_KEY)) || []; } catch (e) { return []; }
+    }
+    function saveNotis(list) {
+        try { sessionStorage.setItem(NOTI_KEY, JSON.stringify(list.slice(0, NOTI_MAX))); } catch (e) { }
+    }
+    function timeText(ms) {                        // "방금" · "3분 전" · "14:05"
+        const diff = Math.floor((Date.now() - ms) / 60000);
+        if (diff < 1) return '방금';
+        if (diff < 60) return diff + '분 전';
+        const d = new Date(ms);
+        return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
+    // ① 모집 중 카드
+    function recruitCard(list) {
+        const card = el('section', 'side-card');
+        const h = el('div', 'side-title');
+        h.appendChild(icon('bi-people me-1'));
+        h.appendChild(document.createTextNode('모집 중'));
+        card.appendChild(h);
+        if (!list.length) {
+            card.appendChild(el('p', 'side-empty', '지금 모집 중인 글이 없습니다.'));
+            return card;
+        }
+        const ul = el('ul', 'side-recruit');
+        list.forEach(function (p) {
+            const li = el('li');
+            li.setAttribute('data-seat-post', p.postId);          // realtime.js 가 이 글 번호로 찾는다
+            const a = el('a', 'side-recruit-title', p.title);
+            a.href = '/board/' + p.postId;
+            li.appendChild(a);
+            const meta = el('div', 'side-recruit-meta');
+            const badge = el('span', 'recruit-badge', '모집 ' + p.appliedCount + '/' + p.capacity);
+            badge.setAttribute('data-field', 'badge-list');      // 모집 a/c ↔ 마감
+            meta.appendChild(badge);
+            const rem = el('span', 'side-remaining');
+            rem.appendChild(document.createTextNode('남은 자리 '));
+            const num = el('strong', null, String(p.remaining));
+            num.setAttribute('data-field', 'remaining');         // 남은 자리 숫자
+            rem.appendChild(num);
+            meta.appendChild(rem);
+            li.appendChild(meta);
+            const bar = el('div', 'side-bar');
+            const fill = el('div', 'side-bar-fill');
+            fill.setAttribute('data-field', 'bar');               // 신청 비율 막대
+            fill.style.width = (p.appliedCount * 100 / p.capacity) + '%';
+            bar.appendChild(fill);
+            li.appendChild(bar);
+            ul.appendChild(li);
+        });
+        card.appendChild(ul);
+        const more = el('a', 'side-more', '게시판에서 더 보기');
+        more.href = '/board';
+        card.appendChild(more);
+        return card;
+    }
+
+    // ② 최근 알림 카드 (로그인한 사람만)
+    function notiCard() {
+        const card = el('section', 'side-card');
+        const h = el('div', 'side-title');
+        h.appendChild(icon('bi-bell me-1'));
+        h.appendChild(document.createTextNode('최근 알림'));
+        const clear = el('button', 'side-clear', '지우기');
+        clear.type = 'button';
+        h.appendChild(clear);
+        card.appendChild(h);
+        const ul = el('ul', 'side-noti');
+        card.appendChild(ul);
+
+        function render() {
+            const list = loadNotis();
+            ul.innerHTML = '';
+            clear.hidden = !list.length;
+            if (!list.length) {
+                ul.appendChild(el('li', 'side-empty', '새 알림이 없습니다. 내 글에 신청 · 취소 · 댓글이 생기면 여기에 쌓입니다.'));
+                return;
+            }
+            list.forEach(function (n) {
+                const li = el('li');
+                const a = el('a', null, n.text);
+                a.href = '/board/' + n.postId;
+                li.appendChild(a);
+                li.appendChild(el('span', 'side-time', timeText(n.at)));
+                ul.appendChild(li);
+            });
+        }
+        clear.addEventListener('click', function () { saveNotis([]); render(); });
+        document.addEventListener('hz:notification', function (e) {     // realtime.js 가 보낸 알림
+            const n = e.detail || {};
+            saveNotis([{ text: n.text, postId: n.postId, at: Date.now() }].concat(loadNotis()));
+            render();
+        });
+        render();
+        setInterval(render, 60000);                // "3분 전" 같은 시간 글자를 1분마다 새로
+        return card;
+    }
+
+    function init() {
+        if (document.querySelector('.side-widget')) return;
+        const box = el('aside', 'side-widget');
+        box.setAttribute('aria-label', '모집 중 · 최근 알림');
+        document.body.appendChild(box);
+
+        fetch('/api/posts/recruiting', { headers: { 'Accept': 'application/json' } })
+            .then(function (res) { return res.ok ? res.json() : []; })
+            .catch(function () { return []; })
+            .then(function (list) { box.insertBefore(recruitCard(list), box.firstChild); });
+
+        window.hzMe().then(function (me) { if (me) box.appendChild(notiCard()); });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        if (!window.matchMedia) return;
+        const mq = window.matchMedia(WIDE);
+        if (mq.matches) init();
+        mq.addEventListener('change', function (e) { if (e.matches) init(); });
     });
 })();

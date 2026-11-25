@@ -15,6 +15,11 @@ import com.example.demo.model.domain.Member;
 @Repository // 게시글 리포지토리 : save, findAll, findById, delete 는 이미 있다
 public interface PostRepository extends JpaRepository<Post, Long> {
 
+    // [여백 활용 ⑥] 모집 중인 글 : 정원이 있고(모집글) 아직 자리가 남은 글, 최신 순
+    // Pageable 로 몇 개만 가져온다 (PageRequest.of(0, 5) → LIMIT 5)
+    @Query("SELECT p FROM Post p WHERE p.capacity IS NOT NULL AND p.appliedCount < p.capacity ORDER BY p.id DESC")
+    List<Post> findRecruiting(Pageable pageable);
+
     // [9주차 연습문제 ②] 작성자(author)의 username 으로 찾고, 번호 큰 순서(최신 글)로
     // → SELECT ... FROM posts p JOIN member m ... WHERE m.username = ? ORDER BY
     // p.id DESC

@@ -726,6 +726,7 @@ if (!writer.equals(username)) { // 내 글의 신청을 내가 취소하면 생�
 | 2 | 신청 바구니 · 관리자 화면 | 완료 |
 | 3 | 로그인 · 회원가입 · 내 정보 · 에러 · `/testdb` | 완료 |
 | 4 | 메인 포트폴리오(`index.html`) | 완료 |
+| + | 넓은 화면 여백 : 판 · 경계선 · 둥근 모서리 · 움직이는 빛 · 조절 버튼 · 왼쪽 메뉴 · 오른쪽 위젯 | 완료 |
 
 ### 1단계 - 공통 테마 + 게시판
 
@@ -998,6 +999,50 @@ if (!writer.equals(username)) { // 내 글의 신청을 내가 취소하면 생�
 | 게시판 · 로그인 안 함 · 라이트 | 로그인 · 회원가입 버튼, 메뉴 2개 |
 | 메인 · admin · 라이트 | "메인" 표시 |
 | 1600px | 메뉴를 만들지 않음 |
+
+### 여백 활용 ⑥ - 오른쪽 위젯 (모집 중 · 최근 알림)
+
+왼쪽 빠른 메뉴와 같은 조건(**1860px 이상**) · 같은 카드 모양으로 오른쪽 여백에 두었다.
+
+**① 모집 중 : 남은 자리가 실시간으로 바뀐다**
+
+- 서버 (새 API)
+  - `PostRepository.findRecruiting(Pageable)` : JPQL `WHERE p.capacity IS NOT NULL AND p.appliedCount < p.capacity ORDER BY p.id DESC` (정원이 있고 자리가 남은 글)
+  - `PostService.findRecruiting(limit)` : `PageRequest.of(0, limit)` → `LIMIT 5`
+  - `dto/RecruitSummary` (새 record) : `postId, title, appliedCount, capacity, remaining`만 → 엔티티를 그대로 보내지 않는다 (7주차 `MemberResponse`와 같은 방식)
+  - `controller/PostApiController` (새 파일) : `GET /api/posts/recruiting`
+  - `SecurityConfig` : `.requestMatchers(HttpMethod.GET, "/api/posts/recruiting").permitAll()` → 게시판 목록처럼 누구나, **GET만** (POST는 401)
+- 화면 (`theme.js`) : 각 줄에 `data-seat-post="글번호"`와 `data-field="remaining" / "badge-list" / "bar"`를 붙였다
+  - 필드 이름을 12주차 `SeatMessage`와 같게 해서, `realtime.js`가 남은 자리 메시지를 받으면 **위젯의 숫자 · 배지 · 막대도 그대로 바뀐다** (새 실시간 코드 없음)
+  - 실시간 연결은 `realtime.js`를 쓰는 화면(게시판 · 상세 · 바구니)에서 동작, 다른 화면은 열 때의 값
+
+**② 최근 알림 (로그인했을 때만)**
+
+- 12주차 알림은 6초 뒤 사라지는 토스트뿐이었다
+- `realtime.js` : 알림을 띄울 때 `document.dispatchEvent(new CustomEvent('hz:notification', { detail: n }))` 한 줄 추가
+- `theme.js` : 이 이벤트를 받아 `sessionStorage`에 최근 5개 저장 → 다른 화면으로 이동해도 브라우저를 닫기 전까지 남는다. "방금 · 3분 전 · 14:05" 시간 표시(1분마다 갱신), "지우기" 버튼
+- 알림 글 · 글 제목은 `textContent`로만 넣는다 (XSS 방지)
+
+**공용 함수** : 왼쪽 메뉴와 오른쪽 위젯이 둘 다 로그인 정보가 필요해서 `window.hzMe()`로 `/api/me`를 **한 번만** 부르고 결과를 함께 쓴다 (왼쪽 메뉴의 기존 `fetch`는 주석)
+
+**결과 확인** (1920px, 확인용 회원 · 모집글을 직접 만들고 끝난 뒤 삭제)
+
+| 하는 일 | 결과 |
+| ------- | ---- |
+| `GET /api/posts/recruiting` (로그인 없이) | 200, 모집 중인 글 2개 JSON |
+| `POST /api/posts/recruiting` | 401 (읽기만 허용) |
+| admin이 게시판을 열어 둔 채로 확인용 회원이 정원 2명 모집글에 신청 | 새로고침 없이 위젯 "남은 자리 2 → 1", "모집 1/2", 노란 강조 |
+| 같은 때 | "최근 알림"에 "위젯학생님이 '…' 에 신청했습니다. (1/2) · 방금" |
+
+**최근 알림 동작 다시 확인** (한 탭에서 화면을 옮겨 가며, 확인용 회원 · 모집글은 끝난 뒤 삭제)
+
+| 순서 | 하는 일 | 결과 |
+| ---- | ------- | ---- |
+| 1 | admin이 게시판을 연다 | 실시간 연결됨, "새 알림이 없습니다" |
+| 2 | 확인용 회원이 admin의 모집글에 신청 → 취소 → 댓글 | 새로고침 없이 3개가 최신 순으로 쌓임 (댓글 · 취소 (0/3) · 신청 (1/3), 모두 "방금") |
+| 3 | 실시간 연결이 없는 메인 화면으로 이동 | 3개 그대로 (`sessionStorage`에 보관) |
+| 4 | "지우기" | "새 알림이 없습니다", 지우기 버튼 숨김 |
+| 5 | 새로고침 | 비어 있는 그대로 (저장값 `[]`) |
 
 ---
 
