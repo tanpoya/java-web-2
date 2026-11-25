@@ -9,6 +9,7 @@ import com.example.demo.model.domain.Member;
 import org.springframework.data.domain.Sort;
 import com.example.demo.model.dto.MemberForm;
 import com.example.demo.model.repository.CommentRepository;
+import com.example.demo.model.repository.EnrollmentRepository;
 import com.example.demo.model.repository.MemberRepository;
 import com.example.demo.model.repository.PostRepository;
 
@@ -28,6 +29,8 @@ public class MemberService implements UserDetailsService {
     private PostRepository postRepository;
     @Autowired
     private CommentRepository commentRepository;
+    @Autowired // [11주차 연습문제 ②] 신청 내역이 있는 회원인지 확인
+    private EnrollmentRepository enrollmentRepository;
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
@@ -110,6 +113,10 @@ public class MemberService implements UserDetailsService {
         checkNotSelf(member); // [6주차 연습문제] 본인 삭제 금지
         if (postRepository.existsByAuthor(member) || commentRepository.existsByAuthor(member)) {
             throw new IllegalArgumentException("작성한 글이나 댓글이 있는 회원은 삭제할 수 없습니다.");
+        }
+        // [11주차 연습문제 ②] 신청 내역이 있는 회원도 막는다 (지우면 모집글의 신청 인원 계산이 어긋난다)
+        if (enrollmentRepository.existsByMember(member)) {
+            throw new IllegalArgumentException("신청 내역이 있는 회원은 삭제할 수 없습니다.");
         }
 
         memberRepository.delete(member); // DELETE

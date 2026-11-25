@@ -408,3 +408,122 @@ Page<Post> searchByWriter(@Param("name") String name, Pageable pageable);
 | 보통 문장 댓글                   | 전처럼 단어 단위로 줄바꿈                      |
 
 # 11주차 파일 업로드 + 신청 바구니 + 트랜잭션 완료
+
+## 11주차 화면 파일 정리 - 이름이 겹치는 게시판 화면 합치기
+
+**문제** : `templates/board/`에 같은 화면이 여러 벌 있었다. (`list.html`, `list_11.html`, `list9.html`, `detail.html`, `detail_11.html`, `form.html`, `form_11.html`) 11주차 제공 화면(`list.html` 등)으로 덮어쓰면서 9·10주차에 직접 추가한 부분이 `_11`, `9` 파일에만 남아 있었다.
+
+**비교 결과**
+
+| 파일                          | 원본(11주차 제공)에 없던 부분                                     | 처리                                  |
+| ----------------------------- | ----------------------------------------------------------------- | ------------------------------------- |
+| `list_11.html`                | 9주차 개선 ① "내가 쓴 글 ↔ 전체 글 보기" 버튼, 9주차 개선 ② `pageshow` 새로고침 스크립트 | `list.html`로 옮김                   |
+| `list9.html`                  | 없음 (내용이 모두 `list_11.html` 안에 있음)                       | -                                     |
+| `detail_11.html`, `form_11.html` | 없음 (원본이 10주차 내용 + 11주차 모집·포스터까지 포함한 상위 버전) | -                                     |
+
+**바꾼 곳**
+
+- `board/list.html`
+  - 헤더의 "내가 쓴 글" 버튼(기존 줄은 주석 처리)을 `myList` 값에 따라 "내가 쓴 글" / "전체 글 보기"로 바뀌는 두 버튼으로 바꿨다.
+  - `</body>` 바로 앞에 `pageshow` 스크립트를 넣었다. 이제 뒤로가기로 돌아왔을 때 조회수뿐 아니라 모집글의 신청 인원(`모집 1/5`)도 최신 값으로 보인다.
+- 합친 뒤 `list_11.html`, `list9.html`, `detail_11.html`, `form_11.html`은 삭제했다. 내용은 원본에 모두 들어 있고, 이전 버전은 git 기록에 남아 있다.
+
+---
+
+## 11주차 연습문제 - 신청기 개선하기
+
+### ① 신청 취소
+
+**문제** : 내 신청 내역의 취소 버튼으로 신청을 취소한다. 신청 내역 삭제 + 신청 인원 - 1.
+
+**조건과 해결**
+
+| 조건                          | 어떻게 지켰나                                                                                         |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------- |
+| 본인 신청만 취소 (남의 것은 403) | 신청 내역의 회원 아이디와 로그인 아이디가 다르면 `AccessDeniedException` → 6주차 403 화면 (9주차 `checkWriter()`와 같은 방식) |
+| 두 작업을 한 트랜잭션으로     | `cancel()`에 `@Transactional` → 삭제와 인원 감소 중 하나라도 실패하면 둘 다 롤백                       |
+| `save()` 없이 변경 감지로 인원 줄이기 | `enrollment.getPost().setAppliedCount(... - 1)`만 하고 `postRepository.save()`는 부르지 않는다      |
+
+**추가한 곳**
+
+- `EnrollmentService` : `cancel(enrollmentId, username)` 메서드
+
+```java
+@Transactional
+public void cancel(Long enrollmentId, String username) {
+    Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "신청 내역이 존재하지 않습니다."));
+    if (!enrollment.getMember().getUsername().equals(username)) {
+        throw new AccessDeniedException("본인의 신청만 취소할 수 있습니다.");
+    }
+    Post post = enrollment.getPost();
+    post.setAppliedCount(Math.max(post.getAppliedCount() - 1, 0)); // save() 없음
+    enrollmentRepository.delete(enrollment);
+}
+```
+
+- `CartController` : `POST /cart/enrollments/{id}/cancel`을 처리하는 `cancel()` 추가. 성공하면 flash 메시지 "신청이 취소되었습니다."와 함께 `/cart`로 돌아간다.
+- `templates/cart.html` : `[11주차 연습문제 1]` 주석(`<!--/* ... */-->`)을 풀어 취소 버튼이 보이게 했다.
+
+**하는 일**
+
+- **변경 감지** : `@Transactional` 안에서 꺼낸 `Post`는 JPA가 커밋할 때까지 지켜본다. 값만 바꿔 두면 커밋할 때 처음 값과 비교해서 `UPDATE posts set applied_count=?`를 자동으로 보낸다. 그래서 `save()`가 필요 없다.
+- **한 트랜잭션** : 신청 내역 `DELETE`와 신청 인원 `UPDATE`가 같은 트랜잭션에서 함께 커밋된다. 중간에 예외가 나면 둘 다 롤백되므로 "내역은 지워졌는데 인원은 그대로" 같은 상태가 생기지 않는다.
+- **403** : `AccessDeniedException`은 스프링 시큐리티가 받아서 403 화면으로 보낸다. 컨트롤러에서 잡지 않았기 때문에 예외가 그대로 시큐리티까지 전달된다.
+- 없는 신청 번호는 404, 인원은 `Math.max(..., 0)`으로 0 아래로 내려가지 않게 했다.
+- 마감된 모집글(예 : C 1/1)에서 한 명이 취소하면 `appliedCount < capacity`가 되어 `isFull()`이 `false` → 다시 "모집 중"이 된다.
+
+### ② 삭제 정리
+
+**문제** : 신청자가 있는 모집글이나 신청 내역이 있는 회원을 지우면 외래 키(`enrollments.post_id`, `enrollments.member_id`) 때문에 500 오류가 난다. 포스터 파일도 글을 지운 뒤 `uploads/`에 그대로 남는다.
+
+**추가·변경한 곳**
+
+- `EnrollmentRepository` : `existsByPost(Post)`, `existsByMember(Member)` 추가
+- `PostService.delete()` : 기존 메서드는 주석으로 남기고 새로 작성
+  - 신청 내역이 있으면 `IllegalStateException("신청자가 있는 모집글은 삭제할 수 없습니다.")`
+  - `postRepository.delete(post)`가 성공한 **다음에** `fileStore.delete(post.getPosterFile())`
+- `BoardController.delete()` : 기존 메서드는 주석으로 남기고, 예외를 잡아 `redirect:/board/{id}?deleteError`로 보내는 새 메서드 작성 (`detail.html`이 안내 메시지를 보여 준다)
+- `MemberService.deleteMember()` : 기존 글·댓글 검사 아래에 `enrollmentRepository.existsByMember(member)` 검사 추가 → `IllegalArgumentException("신청 내역이 있는 회원은 삭제할 수 없습니다.")`
+
+**하는 일**
+
+- 10주차 회원 삭제와 같은 방식이다. DB가 외래 키로 거부하기 **전에** 서비스가 `exists...()`로 먼저 확인해서, 500 대신 안내 메시지를 보여 준다.
+- 회원 삭제는 `IllegalArgumentException`을 쓰므로 관리자 화면(6주차)에는 빨간 안내, 관리자 API(7주차)에는 `400 {"error": ...}`가 그대로 나온다.
+- 모집글 → 신청 내역은 10주차 댓글처럼 cascade로 함께 지우지 않고 **막는다**. 신청한 사람이 모르는 사이에 신청이 사라지면 안 되기 때문이다.
+- 포스터 파일은 DB 삭제가 성공한 뒤에 지운다. 파일 삭제는 트랜잭션 롤백이 되지 않기 때문에(PDF 42장 함정 ④), 순서를 반대로 하면 DB 삭제가 실패했을 때 파일만 사라진 글이 남는다.
+
+**결과 확인**
+
+| 하는 일                              | 기대 결과                                       |
+| ------------------------------------ | ----------------------------------------------- |
+| student1 : B 신청 취소               | "신청이 취소되었습니다.", B 0/5                 |
+| 남의 신청 번호로 취소 요청           | 403                                             |
+| 마감된 C 를 student3 이 취소         | C 가 다시 모집 중 (0/1)                         |
+| 신청자 있는 모집글 삭제              | 상세 화면에 "신청자가 있는 모집글은 삭제할 수 없습니다." |
+| 신청자 없는 포스터 글 삭제           | 글 삭제 + `uploads/`의 포스터 파일도 사라짐     |
+| 신청 내역 있는 회원 삭제             | 관리자 화면 안내 메시지, API 400                |
+
+---
+
+## 12주차 pull 후 정리 - 11주차 연습문제 다시 합치기
+
+**상황** : 11주차 연습문제 작업을 푸시하지 못한 상태에서 다른 PC로 12주차(실시간 알림)를 작업해 푸시했다. (`12주차 - 수강취소 오류있음`) 다른 PC에는 취소 버튼(`cart.html`)만 있고 처리 코드가 없어서 취소가 동작하지 않았다.
+
+**한 일**
+
+- 이 PC의 11주차 작업을 잠시 보관(stash)한 뒤 12주차를 받고(pull), 그 위에 다시 합쳤다.
+  - 자바 코드(`EnrollmentService`, `CartController`, `PostService`, `BoardController`, `MemberService`, `EnrollmentRepository`)는 충돌 없이 합쳐졌다. `EnrollmentService`에는 12주차 이벤트 발행 코드와 11주차 `cancel()`이 함께 있다.
+  - `board/list.html` : 12주차 실시간 알림 스크립트(`stomp.umd.min.js`, `realtime.js`) 아래에 9주차 `pageshow` 새로고침 스크립트를 이어 붙였다.
+  - `cart.html` : 다른 PC에서 이미 취소 버튼 주석을 풀어 두어서 그 버전을 그대로 사용했다.
+- 12주차에 새로 생긴 사본도 11주차 때처럼 원본과 비교해 합쳤다.
+
+| 사본                         | 원본에 없던 부분                                              | 처리                                    |
+| ---------------------------- | ------------------------------------------------------------- | --------------------------------------- |
+| `cart12.html`                | 바구니 "남은 자리" 칸의 `data-seat-post` · `data-field="remaining"` (12주차 실시간 갱신) | `cart.html`로 옮김 (기존 줄은 주석 처리) |
+| `board/list전.html`, `board/detail전.html` | 없음 (12주차 원본이 같은 기능을 실시간 버전으로 포함)        | -                                       |
+| `static/css/board전.css`     | 없음                                                          | -                                       |
+
+- 합친 뒤 사본 4개는 삭제했다. (이전 내용은 git 기록에 남아 있다)
+
+**결과** : `POST /cart/enrollments/{id}/cancel`을 처리하는 코드가 들어와서 "수강취소 오류"가 해결된다. 10주차 댓글 넘침 CSS, 11주차 삭제 정리도 그대로 유지된다.

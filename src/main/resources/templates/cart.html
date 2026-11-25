@@ -69,7 +69,10 @@
                                         class="board-title">제목</a>
                                 </td>
                                 <td th:text="|${post.capacity}명|">5명</td>
-                                <td><strong class="text-primary" th:text="${post.remaining}">5</strong></td>
+                                <!-- <td><strong class="text-primary" th:text="${post.remaining}">5</strong></td> -->
+                                <!-- [12주차] data-seat-post : 실시간 남은 자리 메시지가 오면 이 칸이 바뀐다 (cart12.html 에서 옮김) -->
+                                <td><strong class="text-primary" th:attr="data-seat-post=${post.id}"
+                                        data-field="remaining" th:text="${post.remaining}">5</strong></td>
                                 <td>
                                     <form th:action="@{/cart/{id}/remove(id=${post.id})}" method="post" class="m-0">
                                         <button type="submit" class="btn btn-link btn-sm text-danger p-0"><i

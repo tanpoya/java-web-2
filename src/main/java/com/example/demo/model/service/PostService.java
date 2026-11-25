@@ -24,6 +24,8 @@ import org.springframework.data.domain.PageRequest;
 
 import java.util.Collection;
 
+import com.example.demo.model.repository.EnrollmentRepository;
+
 @Service // 게시판 서비스
 public class PostService {
     @Autowired
@@ -32,6 +34,8 @@ public class PostService {
     private MemberRepository memberRepository;
     @Autowired // [11주차] 단계 2 : 업로드 파일 저장소 (제공 코드)
     private FileStore fileStore;
+    @Autowired // [11주차 연습문제 ②] 신청자가 있는 모집글인지 확인
+    private EnrollmentRepository enrollmentRepository;
 
     public List<Post> findAll() { // 전체 목록 (최신 글이 위로)
         return postRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
@@ -133,11 +137,23 @@ public class PostService {
         return postRepository.save(post); // id 가 있으니 UPDATE
     }
 
+    // public void delete(Long id) { // 글 삭제 (본인 또는 관리자)
+    //     Post post = findById(id);
+    //     if (!isAdmin())
+    //         checkWriter(post); // ★ 추가 : 관리자는 누구 글이든 삭제 가능
+    //     postRepository.delete(post);
+    // }
+
+    // [11주차 연습문제 ②] 글 삭제 : 신청자가 있으면 막고, 지운 뒤에는 포스터 파일도 삭제
     public void delete(Long id) { // 글 삭제 (본인 또는 관리자)
         Post post = findById(id);
         if (!isAdmin())
-            checkWriter(post); // ★ 추가 : 관리자는 누구 글이든 삭제 가능
-        postRepository.delete(post);
+            checkWriter(post); // 관리자는 누구 글이든 삭제 가능
+        if (enrollmentRepository.existsByPost(post)) { // DB(외래 키)가 거부하기 전에 서비스가 먼저 막는다
+            throw new IllegalStateException("신청자가 있는 모집글은 삭제할 수 없습니다.");
+        }
+        postRepository.delete(post); // DELETE (댓글은 cascade 로 함께 삭제)
+        fileStore.delete(post.getPosterFile()); // DB 삭제가 성공한 뒤에 파일 삭제 (파일은 롤백되지 않으므로 순서가 중요)
     }
 
     private void checkWriter(Post post) { // 로그인한 사람이 글쓴이인지 → 아니면 403

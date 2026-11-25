@@ -18,6 +18,10 @@ import com.example.demo.model.dto.Notification;
 
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.server.ResponseStatusException;
+
 @Service // [11주차] 단계 4 : 신청 서비스
 public class EnrollmentService {
     @Autowired
@@ -71,5 +75,19 @@ public class EnrollmentService {
             }
         }
         return postIds.size();
+    }
+
+    // [11주차 연습문제 ①] 신청 취소 : 신청 내역 삭제 + 신청 인원 - 1 을 한 트랜잭션으로
+    @Transactional // 두 작업 중 하나라도 실패하면 모두 롤백
+    public void cancel(Long enrollmentId, String username) {
+        Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "신청 내역이 존재하지 않습니다."));
+        // 본인 신청만 취소 : 남의 신청 번호로 요청하면 403 (9주차 checkWriter 와 같은 방식)
+        if (!enrollment.getMember().getUsername().equals(username)) {
+            throw new AccessDeniedException("본인의 신청만 취소할 수 있습니다.");
+        }
+        Post post = enrollment.getPost(); // 트랜잭션 안에서 꺼낸 엔티티 → JPA 가 변경을 지켜본다
+        post.setAppliedCount(Math.max(post.getAppliedCount() - 1, 0)); // save() 없음 : 커밋 때 변경 감지로 UPDATE
+        enrollmentRepository.delete(enrollment); // DELETE 신청 내역
     }
 }
